@@ -43,6 +43,16 @@ export const electionService = {
     const response = await api.delete(`/elections/${id}`);
     return response.data;
   },
+  publishActiveElection: async (endAt: string): Promise<ApiResponse<Election>> => {
+    const response = await api.post("/elections/active/publish", { endAt });
+    return response.data;
+  },
+
+  showActiveElectionGraph: async (): Promise<ApiResponse<{ id: string; showGraph: boolean }>> => {
+    const response = await api.post("/elections/active/show-graph");
+    return response.data;
+  },
+
   resetElection: async (): Promise<ResetElectionResponse> => {
     const res = await api.post("/elections/reset");
     return res.data;

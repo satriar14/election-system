@@ -8,7 +8,9 @@ import { PublishElectionModal } from "./PublishElectionModal";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { CandidateCardSkeleton } from "../common/Skeleton";
-import { electionStatusHelper } from "../../utils/electionStatus";
+import { votingService } from "../../services/voting.service";
+import { deriveElectionState, EMPTY_ELECTION_STATE } from "../../utils/electionStatus";
+import type { ElectionState } from "../../utils/electionStatus";
 import {
   Award,
   Plus,
@@ -34,7 +36,8 @@ export const CandidateManagement: React.FC = () => {
 
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [electionState, setElectionState] = useState(electionStatusHelper.getState());
+  const [electionState, setElectionState] = useState<ElectionState>(EMPTY_ELECTION_STATE);
+  const [, setTick] = useState(0);
 
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -53,11 +56,37 @@ export const CandidateManagement: React.FC = () => {
     }
   };
 
-  useEffect(() => {
+  const fetchElectionState = async () => {
+    try {
+      const res = await votingService.getActiveElection();
+      if (res.success && res.data) {
+        setElectionState(deriveElectionState(res.data));
+      }
+    } catch (err) {
+      console.error("Error fetching election state:", err);
+    }
+  };
+
+  const refreshAll = () => {
     fetchCandidates();
-    electionStatusHelper.checkAutoEnd();
-    setElectionState(electionStatusHelper.getState());
+    fetchElectionState();
+  };
+
+  useEffect(() => {
+    refreshAll();
   }, []);
+
+  // Render ulang tiap detik agar status "berakhir" berubah tepat waktu
+  useEffect(() => {
+    if (!electionState.isPublished || electionState.isEnded) return;
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+      if (electionState.endTime && new Date(electionState.endTime).getTime() <= Date.now()) {
+        fetchElectionState();
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [electionState.isPublished, electionState.isEnded, electionState.endTime]);
 
   const handleOpenAdd = () => {
     setCandidateToEdit(null);
@@ -101,13 +130,12 @@ export const CandidateManagement: React.FC = () => {
     try {
       setIsPublishing(true);
 
-      const updated = electionStatusHelper.setState({
-        isPublished: true,
-        endTime,
-        isEnded: false,
-        showGraph: false,
-      });
-      setElectionState(updated);
+      const res = await electionService.publishActiveElection(endTime);
+      if (!res.success) {
+        toast.error(res.message || "Gagal mempublikasikan pemilihan");
+        return;
+      }
+      await fetchElectionState();
       setIsPublishModalOpen(false);
 
       const endDate = new Date(endTime);
@@ -121,10 +149,18 @@ export const CandidateManagement: React.FC = () => {
     }
   };
 
-  const handleShowGraph = () => {
-    const updated = electionStatusHelper.setState({ showGraph: true });
-    setElectionState(updated);
-    toast.success("Grafik perolehan suara ditampilkan ke warga.");
+  const handleShowGraph = async () => {
+    try {
+      const res = await electionService.showActiveElectionGraph();
+      if (!res.success) {
+        toast.error(res.message || "Gagal menampilkan grafik");
+        return;
+      }
+      await fetchElectionState();
+      toast.success("Grafik perolehan suara ditampilkan ke warga.");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal menampilkan grafik");
+    }
   };
 
   const handleResetElection = async () => {
@@ -134,8 +170,7 @@ export const CandidateManagement: React.FC = () => {
       const res = await electionService.resetElection();
 
       if (res.success) {
-        electionStatusHelper.reset();
-        setElectionState(electionStatusHelper.getState());
+        setElectionState(EMPTY_ELECTION_STATE);
 
         setCandidates([]);
         setIsResetModalOpen(false);
@@ -192,7 +227,7 @@ export const CandidateManagement: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <button
-            onClick={fetchCandidates}
+            onClick={refreshAll}
             className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl border border-slate-200 transition-all flex items-center gap-2 text-xs font-semibold"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />

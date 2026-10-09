@@ -67,6 +67,7 @@ export interface Election {
   status: ElectionStatus;
   startAt?: string | null;
   endAt?: string | null;
+  showGraph?: boolean;
   candidates?: Candidate[];
   candidateCount?: number;
   voteCount?: number;

@@ -6,7 +6,8 @@ import { votingService } from "../../services/voting.service";
 import { candidateService } from "../../services/candidate.service";
 import type { CastVoteResponse } from "../../services/voting.service";
 import type { Election, Candidate } from "../../types";
-import { electionStatusHelper } from "../../utils/electionStatus";
+import { deriveElectionState, getTimeRemaining, EMPTY_ELECTION_STATE } from "../../utils/electionStatus";
+import type { ElectionState } from "../../utils/electionStatus";
 import {
   ChevronDown,
   UserX,
@@ -22,19 +23,21 @@ export const VotingPage: React.FC = () => {
   const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
   const [voteSuccessData, setVoteSuccessData] = useState<CastVoteResponse | null>(null);
 
-  const [electionState, setElectionState] = useState(electionStatusHelper.getState());
-  const [countdown, setCountdown] = useState(electionStatusHelper.getTimeRemaining());
+  const [electionState, setElectionState] = useState<ElectionState>(EMPTY_ELECTION_STATE);
+  const [countdown, setCountdown] = useState(getTimeRemaining(null));
 
-  const fetchActiveData = async () => {
+  const fetchActiveData = async (silent = false) => {
     try {
-      setLoading(true);
-      electionStatusHelper.checkAutoEnd();
-      setElectionState(electionStatusHelper.getState());
+      if (!silent) setLoading(true);
 
       const res = await votingService.getActiveElection().catch(() => ({
         success: false,
         data: null,
       }));
+
+      setElectionState(
+        res.success && res.data ? deriveElectionState(res.data) : EMPTY_ELECTION_STATE
+      );
 
       const candRes = await candidateService.getAllCandidates();
 
@@ -92,7 +95,7 @@ export const VotingPage: React.FC = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const newCountdown = electionStatusHelper.getTimeRemaining();
+      const newCountdown = getTimeRemaining(electionState.endTime);
       setCountdown(newCountdown);
 
       if (
@@ -100,24 +103,23 @@ export const VotingPage: React.FC = () => {
         electionState.isPublished &&
         !electionState.isEnded
       ) {
-        electionStatusHelper.setState({ isEnded: true });
-        setElectionState(electionStatusHelper.getState());
-        fetchActiveData();
+        setElectionState((prev) => ({ ...prev, isEnded: true }));
+        fetchActiveData(true);
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [electionState.isPublished, electionState.isEnded]);
+  }, [electionState.isPublished, electionState.isEnded, electionState.endTime]);
 
+  // Sinkronkan status publikasi dari server (termasuk saat belum dibuka dan setelah berakhir)
   useEffect(() => {
-    if (electionState.isPublished && !electionState.isEnded) {
-      const interval = setInterval(() => {
-        fetchActiveData();
-      }, 30000); 
+    if (electionState.isEnded && electionState.showGraph) return;
+    const interval = setInterval(() => {
+      fetchActiveData(true);
+    }, 30000);
 
-      return () => clearInterval(interval);
-    }
-  }, [electionState.isPublished, electionState.isEnded]);
+    return () => clearInterval(interval);
+  }, [electionState.isEnded, electionState.showGraph]);
 
   const handleSelectCandidate = (candidate: Candidate) => {
     if (electionState.isEnded || !electionState.isPublished) return;
@@ -133,7 +135,7 @@ export const VotingPage: React.FC = () => {
   const handleResetVote = () => {
     setVoteSuccessData(null);
     setSelectedCandidate(null);
-    fetchActiveData();
+    fetchActiveData(true);
   };
 
   const scrollToCandidates = () => {
@@ -160,6 +162,14 @@ export const VotingPage: React.FC = () => {
     if (totalVotes === 0) return 0;
     return Math.round((voteCount / totalVotes) * 100);
   };
+
+  if (loading && !electionState.isPublished) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-sky-500 animate-spin" />
+      </div>
+    );
+  }
 
   if (!electionState.isPublished) {
     return (
