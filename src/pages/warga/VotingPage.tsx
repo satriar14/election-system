@@ -282,7 +282,7 @@ export const VotingPage: React.FC = () => {
               <p className="text-sm font-medium text-slate-500 max-w-lg mx-auto leading-relaxed">
                 {activeElection.title}
                 {!isEnded &&
-                  ' — Klik "Cek Visi Misi" untuk lihat detail, atau "Pilih Paslon" untuk memberikan suara.'}
+                  ' Klik "Cek Visi Misi" untuk lihat detail, atau "Pilih Paslon" untuk memberikan suara.'}
               </p>
             )}
 

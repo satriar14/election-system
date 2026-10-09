@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Rocket, X, Calendar, Clock } from "lucide-react";
+import { X, Calendar, Clock } from "lucide-react";
 
 interface PublishElectionModalProps {
     isOpen: boolean;
@@ -59,7 +59,7 @@ export const PublishElectionModal: React.FC<PublishElectionModalProps> = ({
 
                     <div className="relative flex items-center gap-3">
                         <div className="w-12 h-12 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shrink-0">
-                            <Rocket className="w-6 h-6 text-white" />
+                            <Calendar className="w-6 h-6 text-white" />
                         </div>
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-white/80">
