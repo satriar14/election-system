@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-primary: #f8fafc;
+    --card-bg: #ffffff;
+    --primary-blue: #0ea5e9;
+    --primary-blue-hover: #0284c7;
+    --primary-blue-light: #f0f9ff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-main);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  }
+}
+
+/* Custom Utilities for clean white & bright light-blue theme */
+.bg-sky-primary {
+  background-color: #0ea5e9;
+}
+
+.bg-sky-primary:hover {
+  background-color: #0284c7;
+}
+
+.text-sky-primary {
+  color: #0ea5e9;
+}
+
+.border-sky-primary {
+  border-color: #0ea5e9;
+}
+
+/* Backwards compatibility for any legacy classes */
+.bg-navy {
+  background-color: #ffffff;
+}
+
+.bg-navy-dark {
+  background-color: #f8fafc;
+}
+
+.bg-navy-light {
+  background-color: #f1f5f9;
+}
+
+.text-navy {
+  color: #0f172a;
+}
+
+.border-navy {
+  border-color: #e2e8f0;
+}
+
+.bg-orange-cta {
+  background-color: #0ea5e9;
+}
+
+.bg-orange-cta:hover {
+  background-color: #0284c7;
+}
+
+.text-orange-cta {
+  color: #0ea5e9;
+}
+
+.border-orange-cta {
+  border-color: #0ea5e9;
+}
+
+.bg-app-gray {
+  background-color: #f8fafc;
+}
+
+/* Toast slide-in animation */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
