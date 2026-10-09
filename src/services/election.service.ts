@@ -9,6 +9,15 @@ export interface CreateElectionInput {
   endAt?: string | null;
 }
 
+export interface ResetElectionResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    deletedCandidates: number;
+    deletedVotes: number;
+  };
+}
+
 export const electionService = {
   getElections: async (): Promise<ApiResponse<Election[]>> => {
     const response = await api.get("/elections");
@@ -33,5 +42,9 @@ export const electionService = {
   deleteElection: async (id: string): Promise<ApiResponse<null>> => {
     const response = await api.delete(`/elections/${id}`);
     return response.data;
+  },
+  resetElection: async (): Promise<ResetElectionResponse> => {
+    const res = await api.post("/elections/reset");
+    return res.data;
   },
 };

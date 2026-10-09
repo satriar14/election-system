@@ -8,7 +8,9 @@ interface CandidateCardProps {
   index: number;
   isSelected?: boolean;
   onSelect: (candidate: Candidate) => void;
-  isElectionEnded?: boolean; 
+  isElectionEnded?: boolean;
+  showGraph?: boolean;
+  votePercentage?: number;
 }
 
 export const CandidateCard: React.FC<CandidateCardProps> = ({
@@ -17,6 +19,8 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
   isSelected,
   onSelect,
   isElectionEnded = false,
+  showGraph = false,
+  votePercentage = 0,
 }) => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const candidateNumber = `0${index + 1}`;
@@ -24,11 +28,13 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
   return (
     <>
       <div
-        className={`relative bg-white rounded-3xl border-2 transition-all duration-300 overflow-hidden flex flex-col shadow-md hover:shadow-xl hover:-translate-y-1 ${
+        className={`relative bg-white rounded-3xl border-2 transition-all duration-300 overflow-hidden flex flex-col shadow-md ${
+          !isElectionEnded ? "hover:shadow-xl hover:-translate-y-1" : ""
+        } ${
           isSelected
             ? "border-sky-500 ring-4 ring-sky-500/20"
             : "border-slate-100 hover:border-sky-200"
-        } ${isElectionEnded ? "opacity-90" : ""}`}
+        }`}
       >
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
           <div
@@ -48,7 +54,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                 src={candidate.photo}
                 alt={candidate.name}
                 className={`w-full h-full object-cover object-top transition-transform duration-500 ${
-                  !isElectionEnded ? "hover:scale-105" : "grayscale"
+                  isElectionEnded ? "grayscale opacity-70" : "hover:scale-105"
                 }`}
               />
             ) : (
@@ -56,24 +62,42 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                 <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center mb-3">
                   <User className="w-12 h-12 text-sky-400" />
                 </div>
-                <span className="text-xs font-bold text-slate-400">
-                  Foto Belum Tersedia
-                </span>
+                <span className="text-xs font-bold text-slate-400">Foto Belum Tersedia</span>
               </div>
             )}
 
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent" />
+            {showGraph && isElectionEnded && (
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
+                <div className="text-center text-white">
+                  <div className="text-5xl font-black">{votePercentage}%</div>
+                  <div className="text-xs font-bold text-white/80 uppercase tracking-widest mt-1">
+                    {candidate.voteCount || 0} Suara
+                  </div>
+                </div>
+              </div>
+            )}
 
-            <div className="absolute bottom-4 left-4 right-4 text-left">
-              <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">
-                Calon Ketua RT
-              </p>
-              <h3 className="text-xl font-black text-white leading-tight drop-shadow-md">
-                {candidate.name}
-              </h3>
-            </div>
+            {!showGraph && (
+              <>
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4 text-left">
+                  <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">
+                    Calon Ketua RT
+                  </p>
+                  <h3 className="text-xl font-black text-white leading-tight drop-shadow-md">
+                    {candidate.name}
+                  </h3>
+                </div>
+              </>
+            )}
           </div>
         </div>
+
+        {showGraph && isElectionEnded && (
+          <div className="px-4 pb-2 text-center">
+            <h3 className="text-lg font-black text-slate-900">{candidate.name}</h3>
+          </div>
+        )}
 
         <div className="px-4 pb-4 space-y-2">
           <button
@@ -98,7 +122,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
             {isElectionEnded ? (
               <>
                 <Vote className="w-4 h-4" />
-                <span>PEMILIHAN BERAKHIR</span>
+                <span>{showGraph ? "HASIL DITAMPILKAN" : "PEMILIHAN BERAKHIR"}</span>
               </>
             ) : isSelected ? (
               <>
@@ -207,21 +231,18 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
             >
               Tutup
             </button>
-            <button
-              onClick={() => {
-                setShowDetailModal(false);
-                onSelect(candidate);
-              }}
-              disabled={isElectionEnded}
-              className={`flex-[2] py-3 rounded-xl text-sm font-black shadow-sm flex items-center justify-center gap-2 transition-all ${
-                isElectionEnded
-                  ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                  : "bg-sky-500 hover:bg-sky-600 text-white hover:shadow-md"
-              }`}
-            >
-              <Vote className="w-4 h-4" />
-              <span>{isElectionEnded ? "PEMILIHAN BERAKHIR" : "PILIH PASLON INI"}</span>
-            </button>
+            {!isElectionEnded && (
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  onSelect(candidate);
+                }}
+                className="flex-[2] py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-black shadow-sm flex items-center justify-center gap-2 transition-all"
+              >
+                <Vote className="w-4 h-4" />
+                <span>PILIH PASLON INI</span>
+              </button>
+            )}
           </div>
         </div>
       </Modal>
