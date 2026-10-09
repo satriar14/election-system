@@ -7,6 +7,7 @@ export interface CreateCandidateInput {
   photo?: string | null;
   vision?: string | null;
   mission?: string | null;
+  isLag?: boolean;
 }
 
 export const candidateService = {

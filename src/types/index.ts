@@ -53,6 +53,7 @@ export interface Candidate {
   photo?: string | null;
   vision?: string | null;
   mission?: string | null;
+  isLag?: boolean;
   electionId: string;
   voteCount?: number;
   createdAt?: string;

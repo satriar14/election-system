@@ -22,8 +22,8 @@ export interface CastVoteResponse {
 }
 
 export const votingService = {
-  verifyHouse: async (block: string, houseNumber: string): Promise<ApiResponse<VerifyHouseResponse>> => {
-    const response = await api.post("/voting/verify-house", { block, houseNumber });
+  verifyHouse: async (block: string, houseNumber: string, signal?: AbortSignal): Promise<ApiResponse<VerifyHouseResponse>> => {
+    const response = await api.post("/voting/verify-house", { block, houseNumber }, { signal });
     return response.data;
   },
 
@@ -32,8 +32,8 @@ export const votingService = {
     return response.data;
   },
 
-  castVote: async (data: CastVoteInput): Promise<ApiResponse<CastVoteResponse>> => {
-    const response = await api.post("/voting/cast-vote", data);
+  castVote: async (data: CastVoteInput, signal?: AbortSignal): Promise<ApiResponse<CastVoteResponse>> => {
+    const response = await api.post("/voting/cast-vote", data, { signal });
     return response.data;
   },
 

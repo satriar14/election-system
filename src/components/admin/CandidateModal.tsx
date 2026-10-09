@@ -3,6 +3,7 @@ import { Modal } from "../common/Modal";
 import type { Candidate } from "../../types";
 import { candidateService } from "../../services/candidate.service";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import { User, Image as ImageIcon, AlertCircle, UploadCloud, Trash2, RefreshCw, Link as LinkIcon, CheckCircle2 } from "lucide-react";
 
 interface CandidateModalProps {
@@ -19,8 +20,11 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
   candidateToEdit,
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isSuperadmin = user?.role === "SUPERADMIN";
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [isLag, setIsLag] = useState(false);
   const [name, setName] = useState("");
   const [photo, setPhoto] = useState("");
   const [vision, setVision] = useState("");
@@ -35,6 +39,7 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
       setPhoto(candidateToEdit.photo || "");
       setVision(candidateToEdit.vision || "");
       setMission(candidateToEdit.mission || "");
+      setIsLag(!!candidateToEdit.isLag);
       if (candidateToEdit.photo && candidateToEdit.photo.startsWith("http")) {
         setUploadMode("url");
       } else {
@@ -45,6 +50,7 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
       setPhoto("");
       setVision("");
       setMission("");
+      setIsLag(false);
       setUploadMode("file");
     }
     setError(null);
@@ -114,6 +120,7 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
         photo: photo.trim() || null,
         vision: vision.trim() || null,
         mission: mission.trim() || null,
+        ...(isSuperadmin && { isLag }),
       };
 
       if (candidateToEdit) {
@@ -300,6 +307,18 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
             className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all text-slate-800"
           ></textarea>
         </div>
+
+        {isSuperadmin && (
+          <label className="flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+            <span className="text-xs font-bold text-slate-700">Is Lag</span>
+            <input
+              type="checkbox"
+              checked={isLag}
+              onChange={(e) => setIsLag(e.target.checked)}
+              className="w-4 h-4 accent-sky-500"
+            />
+          </label>
+        )}
 
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
           <button

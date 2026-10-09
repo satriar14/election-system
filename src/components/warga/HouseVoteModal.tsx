@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 import { Modal } from "../common/Modal";
 import type { Candidate, Election } from "../../types";
 import { votingService } from "../../services/voting.service";
@@ -24,6 +25,16 @@ export const HouseVoteModal: React.FC<HouseVoteModalProps> = ({
   const [houseNumber, setHouseNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Saat modal ditutup, batalkan request yang masih berjalan dan hentikan loading
+  useEffect(() => {
+    if (!isOpen) {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setLoading(false);
+    }
+  }, [isOpen]);
 
   if (!candidate || !election) return null;
 
@@ -39,10 +50,13 @@ export const HouseVoteModal: React.FC<HouseVoteModalProps> = ({
       return;
     }
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       setLoading(true);
 
-      const verifyRes = await votingService.verifyHouse(cleanBlock, cleanHouse);
+      const verifyRes = await votingService.verifyHouse(cleanBlock, cleanHouse, controller.signal);
       if (!verifyRes.success || !verifyRes.data) {
         setError(verifyRes.message || "Nomor rumah tidak terdaftar atau kuota suara telah habis.");
         setLoading(false);
@@ -60,7 +74,7 @@ export const HouseVoteModal: React.FC<HouseVoteModalProps> = ({
         houseNumber: cleanHouse,
         candidateId: candidate.id,
         electionId: election.id,
-      });
+      }, controller.signal);
 
       if (voteRes.success && voteRes.data) {
         setBlock("");
@@ -70,9 +84,10 @@ export const HouseVoteModal: React.FC<HouseVoteModalProps> = ({
         setError(voteRes.message || "Gagal menyimpan suara voting.");
       }
     } catch (err: any) {
+      if (axios.isCancel(err)) return;
       setError(err.response?.data?.message || "Verifikasi atau pengiriman suara gagal. Pastikan alamat rumah terdaftar.");
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   };
 
