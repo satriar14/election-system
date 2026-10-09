@@ -4,6 +4,7 @@ import { candidateService } from "../../services/candidate.service";
 import { CandidateModal } from "./CandidateModal";
 import { ConfirmDeleteModal } from "../common/ConfirmDeleteModal";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import { CandidateCardSkeleton } from "../common/Skeleton";
 import { electionStatusHelper } from "../../utils/electionStatus";
 import {
@@ -18,6 +19,7 @@ import {
 
 export const CandidateManagement: React.FC = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,6 +61,12 @@ export const CandidateManagement: React.FC = () => {
   };
 
   const handleDeleteClick = (candidate: Candidate) => {
+    if (candidate.voteCount && user?.role !== "SUPERADMIN") {
+      toast.error(
+        `Kandidat tidak dapat dihapus karena sudah memiliki ${candidate.voteCount} suara. Hanya superadmin yang dapat menghapusnya.`
+      );
+      return;
+    }
     setCandidateToDelete(candidate);
   };
 
@@ -264,7 +272,11 @@ export const CandidateManagement: React.FC = () => {
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}
         title="Hapus Kandidat"
-        description="Apakah Anda yakin ingin menghapus kandidat ini? Semua data terkait akan dihapus secara permanen."
+        description={
+          candidateToDelete?.voteCount
+            ? `Kandidat ini sudah memiliki ${candidateToDelete.voteCount} suara. Menghapusnya akan ikut menghapus semua suara tersebut secara permanen dan mengubah hasil pemilihan. Lanjutkan?`
+            : "Apakah Anda yakin ingin menghapus kandidat ini? Semua data terkait akan dihapus secara permanen."
+        }
         itemName={candidateToDelete ? candidateToDelete.name : ""}
       />
 
