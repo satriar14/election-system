@@ -29,7 +29,7 @@ export const PengawasDashboard: React.FC = () => {
           <AdminOverviewDashboard onNavigateTab={setActiveTab} />
         )}
         {activeTab === "live-count" && <LiveCountOverview />}
-        {activeTab === "audit" && <AuditLogViewer />}
+        {activeTab === "audit" && <AuditLogViewer viewerRole="PENGAWAS" />}
         {activeTab === "houses" && <HouseManagement />}
       </main>
     </div>

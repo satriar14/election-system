@@ -1,31 +1,49 @@
-import React, { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import { Sidebar } from "../../components/common/Sidebar";
 import { CandidateManagement } from "../../components/admin/CandidateManagement";
 import { HouseManagement } from "../../components/admin/HouseManagement";
 import { LiveCountOverview } from "../../components/pengawas/LiveCountOverview";
+import { AuditLogTable } from "../../components/superadmin/AuditLogTable";
 import { AdminOverviewDashboard } from "../../components/admin/AdminOverviewDashboard";
+import { auditService } from "../../services/audit.service";
+import type { AuditLog } from "../../types";
 
 export const AdminDashboard: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") || localStorage.getItem("admin_tab") || "dashboard";
-  const [activeTab, setActiveTabState] = useState(initialTab);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
 
-  const setActiveTab = (tab: string) => {
-    setActiveTabState(tab);
-    setSearchParams({ tab }, { replace: true });
-    localStorage.setItem("admin_tab", tab);
-  };
+  useEffect(() => {
+    if (activeTab === "audit") {
+      setLoadingLogs(true);
+      auditService
+        .getAuditLogs()
+        .then((res) => {
+          if (res.success && res.data) setAuditLogs(res.data);
+        })
+        .catch(console.error)
+        .finally(() => setLoadingLogs(false));
+    }
+  }, [activeTab]);
 
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} />
 
       <main className="flex-1 p-6 md:p-8 overflow-y-auto w-full">
-        {activeTab === "dashboard" && <AdminOverviewDashboard onNavigateTab={setActiveTab} />}
+        {activeTab === "dashboard" && (
+          <AdminOverviewDashboard onNavigateTab={setActiveTab} />
+        )}
         {activeTab === "candidates" && <CandidateManagement />}
         {activeTab === "houses" && <HouseManagement />}
         {activeTab === "live-count" && <LiveCountOverview />}
+        {activeTab === "audit" && (
+          <AuditLogTable
+            logs={auditLogs}
+            isLoading={loadingLogs}
+            viewerRole="ADMIN"
+          />
+        )}
       </main>
     </div>
   );
