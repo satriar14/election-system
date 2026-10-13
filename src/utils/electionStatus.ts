@@ -1,10 +1,8 @@
-const ELECTION_STATE_KEY = "election_state";
-
 export interface ElectionState {
   isPublished: boolean;
-  endTime: string | null; 
+  endTime: string | null;
   isEnded: boolean;
-  showGraph: boolean; 
+  showGraph: boolean;
 }
 
 const DEFAULT_STATE: ElectionState = {
@@ -14,46 +12,50 @@ const DEFAULT_STATE: ElectionState = {
   showGraph: false,
 };
 
+let currentState: ElectionState = { ...DEFAULT_STATE };
+
 export const electionStatusHelper = {
   getState: (): ElectionState => {
-    try {
-      const raw = localStorage.getItem(ELECTION_STATE_KEY);
-      if (!raw) return DEFAULT_STATE;
-      return JSON.parse(raw);
-    } catch {
-      return DEFAULT_STATE;
-    }
+    return { ...currentState };
   },
 
   setState: (state: Partial<ElectionState>) => {
-    const current = electionStatusHelper.getState();
-    const updated = { ...current, ...state };
-    localStorage.setItem(ELECTION_STATE_KEY, JSON.stringify(updated));
-    return updated;
+    currentState = { ...currentState, ...state };
+    return currentState;
   },
 
-  checkAutoEnd: (): boolean => {
-    const state = electionStatusHelper.getState();
-    if (!state.isPublished || !state.endTime) return false;
-
-    const now = new Date().getTime();
-    const end = new Date(state.endTime).getTime();
-
-    if (now >= end && !state.isEnded) {
-      electionStatusHelper.setState({ isEnded: true });
-      return true;
+  syncFromElection: (election: any): ElectionState => {
+    if (!election) {
+      currentState = { ...DEFAULT_STATE };
+      return currentState;
     }
-    return state.isEnded;
+
+    const isPublished =
+      election.status === "ONGOING" || election.status === "COMPLETED";
+    const isEnded = election.status === "COMPLETED";
+
+    currentState = {
+      isPublished,
+      endTime: election.endAt || null,
+      isEnded,
+      showGraph: election.showGraph === true,
+    };
+    return currentState;
   },
 
-  getTimeRemaining: (): { days: number; hours: number; minutes: number; seconds: number; isExpired: boolean } => {
-    const state = electionStatusHelper.getState();
-    if (!state.endTime) {
+  getTimeRemaining: (): {
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    isExpired: boolean;
+  } => {
+    if (!currentState.endTime) {
       return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true };
     }
 
     const now = new Date().getTime();
-    const end = new Date(state.endTime).getTime();
+    const end = new Date(currentState.endTime).getTime();
     const diff = end - now;
 
     if (diff <= 0) {
@@ -69,14 +71,23 @@ export const electionStatusHelper = {
     };
   },
 
-  reset: () => {
-    localStorage.removeItem(ELECTION_STATE_KEY);
+  checkAutoEnd: (): boolean => {
+    if (!currentState.endTime || !currentState.isPublished) return false;
+    const now = new Date().getTime();
+    const end = new Date(currentState.endTime).getTime();
+    if (now >= end && !currentState.isEnded) {
+      currentState.isEnded = true;
+      return true;
+    }
+    return currentState.isEnded;
   },
 
-  isEnded: (): boolean => {
-    return electionStatusHelper.checkAutoEnd();
+  reset: () => {
+    currentState = { ...DEFAULT_STATE };
   },
+
+  isEnded: (): boolean => currentState.isEnded,
   setEnded: (ended: boolean) => {
-    electionStatusHelper.setState({ isEnded: ended });
+    currentState.isEnded = ended;
   },
 };

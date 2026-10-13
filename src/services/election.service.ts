@@ -15,6 +15,7 @@ export interface ResetElectionResponse {
   data?: {
     deletedCandidates: number;
     deletedVotes: number;
+    newElectionId?: string;
   };
 }
 
@@ -43,8 +44,24 @@ export const electionService = {
     const response = await api.delete(`/elections/${id}`);
     return response.data;
   },
+
   resetElection: async (): Promise<ResetElectionResponse> => {
     const res = await api.post("/elections/reset");
+    return res.data;
+  },
+
+  publishElection: async (id: string, endAt: string): Promise<ApiResponse<Election>> => {
+    const res = await api.post(`/elections/${id}/publish`, { endAt });
+    return res.data;
+  },
+
+  endElectionNow: async (id: string): Promise<ApiResponse<Election>> => {
+    const res = await api.post(`/elections/${id}/end-now`);
+    return res.data;
+  },
+
+  showGraphElection: async (id: string): Promise<ApiResponse<Election>> => {
+    const res = await api.post(`/elections/${id}/show-graph`);
     return res.data;
   },
 };

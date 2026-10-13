@@ -1,19 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CandidateCard } from "../../components/warga/CandidateCard";
 import { HouseVoteModal } from "../../components/warga/HouseVoteModal";
 import { VotingSuccessView } from "../../components/warga/VotingSuccessView";
 import { votingService } from "../../services/voting.service";
-import { candidateService } from "../../services/candidate.service";
 import type { CastVoteResponse } from "../../services/voting.service";
 import type { Election, Candidate } from "../../types";
-import { electionStatusHelper } from "../../utils/electionStatus";
-import {
-  ChevronDown,
-  UserX,
-  Loader2,
-  Clock,
-  Award,
-} from "lucide-react";
+import { ChevronDown, UserX, Loader2, Clock, Award } from "lucide-react";
 
 export const VotingPage: React.FC = () => {
   const [activeElection, setActiveElection] = useState<Election | null>(null);
@@ -22,67 +14,33 @@ export const VotingPage: React.FC = () => {
   const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
   const [voteSuccessData, setVoteSuccessData] = useState<CastVoteResponse | null>(null);
 
-  const [electionState, setElectionState] = useState(electionStatusHelper.getState());
-  const [countdown, setCountdown] = useState(electionStatusHelper.getTimeRemaining());
+  const [countdown, setCountdown] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    isExpired: true,
+  });
+
+  const fetchingRef = useRef(false);
 
   const fetchActiveData = async () => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+
     try {
-      setLoading(true);
-      electionStatusHelper.checkAutoEnd();
-      setElectionState(electionStatusHelper.getState());
-
-      const res = await votingService.getActiveElection().catch(() => ({
-        success: false,
-        data: null,
-      }));
-
-      const candRes = await candidateService.getAllCandidates();
-
-      if (
-        candRes.success &&
-        candRes.data &&
-        candRes.data.length > 0
-      ) {
-        setActiveElection({
-          id: candRes.data[0].electionId || "default-election",
-          title:
-            (res.success && res.data?.title) || "Pemilihan Ketua RT",
-          description:
-            (res.success && res.data?.description) ||
-            "Agenda Pemilihan Ketua RT Resmi",
-          status: "ONGOING",
-          candidates: candRes.data, 
-        } as Election);
-      } else if (
-        res.success &&
-        res.data &&
-        res.data.candidates &&
-        res.data.candidates.length > 0
-      ) {
+      const res = await votingService.getActiveElection();
+      if (res.success && res.data) {
         setActiveElection(res.data as Election);
       } else {
         setActiveElection(null);
       }
     } catch (err) {
-      console.error("Fetch active data error:", err);
-      try {
-        const candRes = await candidateService.getAllCandidates();
-        if (candRes.success && candRes.data && candRes.data.length > 0) {
-          setActiveElection({
-            id: candRes.data[0].electionId || "default-election",
-            title: "Pemilihan Ketua RT",
-            description: "Agenda Pemilihan Ketua RT Resmi",
-            status: "ONGOING",
-            candidates: candRes.data,
-          } as Election);
-        } else {
-          setActiveElection(null);
-        }
-      } catch {
-        setActiveElection(null);
-      }
+      console.error("Fetch active election error:", err);
+      setActiveElection(null);
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   };
 
@@ -91,36 +49,62 @@ export const VotingPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newCountdown = electionStatusHelper.getTimeRemaining();
-      setCountdown(newCountdown);
+    if (!activeElection || activeElection.status !== "ONGOING") return;
 
-      if (
-        newCountdown.isExpired &&
-        electionState.isPublished &&
-        !electionState.isEnded
-      ) {
-        electionStatusHelper.setState({ isEnded: true });
-        setElectionState(electionStatusHelper.getState());
+    const interval = setInterval(() => {
+      if (!activeElection.endAt) {
+        setCountdown({
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          isExpired: true,
+        });
+        return;
+      }
+
+      const now = new Date().getTime();
+      const end = new Date(activeElection.endAt).getTime();
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setCountdown({
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          isExpired: true,
+        });
         fetchActiveData();
+      } else {
+        setCountdown({
+          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          hours: Math.floor(
+            (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+          ),
+          minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((diff % (1000 * 60)) / 1000),
+          isExpired: false,
+        });
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [electionState.isPublished, electionState.isEnded]);
+  }, [activeElection]);
 
   useEffect(() => {
-    if (electionState.isPublished && !electionState.isEnded) {
-      const interval = setInterval(() => {
-        fetchActiveData();
-      }, 30000); 
+    if (!activeElection || activeElection.status !== "ONGOING") return;
 
-      return () => clearInterval(interval);
-    }
-  }, [electionState.isPublished, electionState.isEnded]);
+    const interval = setInterval(() => {
+      fetchActiveData();
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [activeElection]);
 
   const handleSelectCandidate = (candidate: Candidate) => {
-    if (electionState.isEnded || !electionState.isPublished) return;
+    if (!activeElection || activeElection.status !== "ONGOING") return;
+    if (countdown.isExpired) return;
     setSelectedCandidate(candidate);
     setIsVoteModalOpen(true);
   };
@@ -147,11 +131,11 @@ export const VotingPage: React.FC = () => {
     (acc, c) => acc + (c.voteCount || 0),
     0
   );
+
   const winner =
     candidatesList.length > 0
       ? candidatesList.reduce(
-          (max, c) =>
-            (c.voteCount || 0) > (max.voteCount || 0) ? c : max,
+          (max, c) => ((c.voteCount || 0) > (max.voteCount || 0) ? c : max),
           candidatesList[0]
         )
       : null;
@@ -161,7 +145,20 @@ export const VotingPage: React.FC = () => {
     return Math.round((voteCount / totalVotes) * 100);
   };
 
-  if (!electionState.isPublished) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+        <div className="text-center space-y-3">
+          <Loader2 className="w-10 h-10 text-sky-500 animate-spin mx-auto" />
+          <p className="text-xs font-bold text-slate-600">
+            Memuat data pemilihan...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeElection || activeElection.status === "DRAFT") {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center px-4">
         <div className="max-w-md text-center space-y-4">
@@ -182,14 +179,16 @@ export const VotingPage: React.FC = () => {
 
   if (voteSuccessData) {
     return (
-      <VotingSuccessView
-        voteData={voteSuccessData}
-        onReset={handleResetVote}
-      />
+      <VotingSuccessView voteData={voteSuccessData} onReset={handleResetVote} />
     );
   }
 
-  const isEnded = electionState.isEnded || countdown.isExpired;
+  const isEnded =
+    activeElection.status === "COMPLETED" ||
+    activeElection.status === "CANCELLED" ||
+    countdown.isExpired;
+  const isOngoing = activeElection.status === "ONGOING" && !countdown.isExpired;
+  const showGraph = isEnded && (activeElection as any).showGraph === true;
 
   return (
     <div className="min-h-screen bg-white pb-20">
@@ -236,7 +235,7 @@ export const VotingPage: React.FC = () => {
               : "Satu suara menentukan masa depan lingkungan kita. Yuk, gunakan hak pilihmu sekarang!"}
           </p>
 
-          {!isEnded && (
+          {isOngoing && (
             <div className="pt-4">
               <button
                 onClick={scrollToCandidates}
@@ -281,31 +280,29 @@ export const VotingPage: React.FC = () => {
             {activeElection && (
               <p className="text-sm font-medium text-slate-500 max-w-lg mx-auto leading-relaxed">
                 {activeElection.title}
-                {!isEnded &&
+                {isOngoing &&
                   ' Klik "Cek Visi Misi" untuk lihat detail, atau "Pilih Paslon" untuk memberikan suara.'}
               </p>
             )}
 
-            {!isEnded &&
-              electionState.isPublished &&
-              !countdown.isExpired && (
-                <div className="pt-4">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-50 border border-sky-100">
-                    <Clock className="w-3.5 h-3.5 text-sky-500" />
-                    <span className="text-xs font-bold text-slate-700">
-                      Berakhir dalam:
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-center gap-2 mt-3">
-                    {countdown.days > 0 && (
-                      <CountdownBox value={countdown.days} label="Hari" />
-                    )}
-                    <CountdownBox value={countdown.hours} label="Jam" />
-                    <CountdownBox value={countdown.minutes} label="Menit" />
-                    <CountdownBox value={countdown.seconds} label="Detik" />
-                  </div>
+            {isOngoing && !countdown.isExpired && (
+              <div className="pt-4">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-50 border border-sky-100">
+                  <Clock className="w-3.5 h-3.5 text-sky-500" />
+                  <span className="text-xs font-bold text-slate-700">
+                    Berakhir dalam:
+                  </span>
                 </div>
-              )}
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  {countdown.days > 0 && (
+                    <CountdownBox value={countdown.days} label="Hari" />
+                  )}
+                  <CountdownBox value={countdown.hours} label="Jam" />
+                  <CountdownBox value={countdown.minutes} label="Menit" />
+                  <CountdownBox value={countdown.seconds} label="Detik" />
+                </div>
+              </div>
+            )}
           </div>
 
           {isEnded && (
@@ -323,14 +320,7 @@ export const VotingPage: React.FC = () => {
             </div>
           )}
 
-          {loading ? (
-            <div className="p-16 text-center text-slate-400 space-y-3">
-              <Loader2 className="w-10 h-10 text-sky-500 animate-spin mx-auto" />
-              <p className="text-xs font-bold text-slate-600">
-                Memuat calon kandidat...
-              </p>
-            </div>
-          ) : candidatesList.length === 0 ? (
+          {candidatesList.length === 0 ? (
             <div className="p-12 rounded-3xl bg-slate-50 border border-slate-200 text-center max-w-lg mx-auto space-y-4">
               <UserX className="w-12 h-12 text-slate-400 mx-auto" />
               <h3 className="text-lg font-black text-slate-800">
@@ -348,13 +338,13 @@ export const VotingPage: React.FC = () => {
                     isSelected={selectedCandidate?.id === candidate.id}
                     onSelect={handleSelectCandidate}
                     isElectionEnded={isEnded}
-                    showGraph={electionState.showGraph && isEnded}
+                    showGraph={showGraph}
                     votePercentage={getVotePercentage(candidate.voteCount || 0)}
                   />
                 ))}
               </div>
 
-              {electionState.showGraph && isEnded && winner && totalVotes > 0 && (
+              {showGraph && winner && totalVotes > 0 && (
                 <div className="pt-6">
                   <div className="bg-gradient-to-br from-sky-500 to-sky-600 rounded-3xl p-8 sm:p-12 text-white text-center relative overflow-hidden shadow-2xl">
                     <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -mr-32 -mt-32" />
