@@ -18,6 +18,7 @@ import {
   Clock,
   RotateCcw,
   BarChart3,
+  AlertTriangle,
 } from "lucide-react";
 
 export const CandidateManagement: React.FC = () => {
@@ -36,6 +37,9 @@ export const CandidateManagement: React.FC = () => {
 
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+
+  const [isEndNowModalOpen, setIsEndNowModalOpen] = useState(false);
+  const [isEndingNow, setIsEndingNow] = useState(false);
 
   const fetchCandidates = async () => {
     try {
@@ -117,6 +121,25 @@ export const CandidateManagement: React.FC = () => {
     const updated = electionStatusHelper.setState({ showGraph: true });
     setElectionState(updated);
     toast.success("Grafik perolehan suara ditampilkan ke warga.");
+  };
+
+  const handleEndNow = () => {
+    try {
+      setIsEndingNow(true);
+
+      const updated = electionStatusHelper.setState({
+        isEnded: true,
+        endTime: new Date().toISOString(),
+      });
+      setElectionState(updated);
+      setIsEndNowModalOpen(false);
+
+      toast.success("Pemilihan diakhiri lebih awal. Warga tidak bisa voting lagi.");
+    } catch (err: any) {
+      toast.error("Gagal mengakhiri pemilihan");
+    } finally {
+      setIsEndingNow(false);
+    }
   };
 
   const handleResetElection = async () => {
@@ -210,10 +233,19 @@ export const CandidateManagement: React.FC = () => {
               <span>Publikasi Sekarang</span>
             </button>
           ) : !electionState.isEnded ? (
-            <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Sedang Berlangsung</span>
-            </div>
+            <>
+              <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Sedang Berlangsung</span>
+              </div>
+
+              <button
+                onClick={() => setIsEndNowModalOpen(true)}
+                className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold shadow-sm shadow-sky-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                <span>Akhiri Sekarang</span>
+              </button>
+            </>
           ) : !electionState.showGraph ? (
             <button
               onClick={handleShowGraph}
@@ -232,7 +264,7 @@ export const CandidateManagement: React.FC = () => {
             </button>
           )}
 
-          {!electionState.showGraph && (
+          {!electionState.isPublished && !electionState.showGraph && (
             <button
               onClick={handleOpenAdd}
               className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold shadow-sm shadow-sky-500/20 transition-all flex items-center justify-center gap-2"
@@ -246,6 +278,7 @@ export const CandidateManagement: React.FC = () => {
 
       {electionState.isPublished && !electionState.isEnded && (
         <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-3">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mt-1.5 shrink-0" />
           <div>
             <h4 className="text-sm font-bold text-emerald-800">
               Pemilihan Sedang Berlangsung
@@ -255,7 +288,7 @@ export const CandidateManagement: React.FC = () => {
               <strong>
                 {endTimeFormatted.date} pukul {endTimeFormatted.time}
               </strong>
-              .
+              . Atau klik <strong>"Akhiri Sekarang"</strong> untuk menutup lebih awal.
             </p>
           </div>
         </div>
@@ -307,7 +340,7 @@ export const CandidateManagement: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleDeleteClick(candidate)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-all"
                       title="Hapus Candidate"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -387,6 +420,85 @@ export const CandidateManagement: React.FC = () => {
         isLoading={isPublishing}
       />
 
+      {isEndNowModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm"
+            onClick={!isEndingNow ? () => setIsEndNowModalOpen(false) : undefined}
+          />
+
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden z-10 border border-slate-100">
+            <div className="relative bg-sky-500 text-white px-6 pt-6 pb-10 overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -mr-16 -mt-16" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/10 -ml-12 -mb-12" />
+
+              <div className="relative flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/80">
+                    Konfirmasi
+                  </p>
+                  <h3 className="text-lg font-black text-white leading-tight">
+                    Akhiri Pemilihan Sekarang
+                  </h3>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 pt-5 pb-6 space-y-4">
+              <p className="text-center text-sm text-slate-600 leading-relaxed">
+                Apakah Anda yakin ingin <strong>mengakhiri pemilihan sekarang</strong>?
+                Warga tidak akan bisa vote lagi.
+              </p>
+
+              <div className="p-3 rounded-xl bg-sky-50 border border-sky-100 space-y-1.5 text-xs">
+                <p className="font-bold text-sky-700">Yang bakal terjadi:</p>
+                <ul className="text-sky-600 space-y-1 pl-4 list-disc">
+                  <li>Voting langsung ditutup sekarang</li>
+                  <li>Warga tidak bisa vote lagi</li>
+                  <li>Hasil akhir bisa langsung ditampilkan</li>
+                </ul>
+              </div>
+
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
+                  Pastikan semua suara sudah masuk sebelum mengakhiri lebih awal.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch gap-2.5">
+              <button
+                onClick={() => setIsEndNowModalOpen(false)}
+                disabled={isEndingNow}
+                className="flex-1 py-3 rounded-xl bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 text-sm font-bold transition-all disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleEndNow}
+                disabled={isEndingNow}
+                className="flex-[2] py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-black shadow-sm hover:shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              >
+                {isEndingNow ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Akhiri</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isResetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -460,7 +572,7 @@ export const CandidateManagement: React.FC = () => {
                 ) : (
                   <>
                     <RotateCcw className="w-4 h-4" />
-                    <span>Ya, Mulai Baru</span>
+                    <span>Mulai Baru</span>
                   </>
                 )}
               </button>
