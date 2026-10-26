@@ -1,16 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { Candidate } from "../../types";
 import { candidateService } from "../../services/candidate.service";
 import { electionService } from "../../services/election.service";
+import { votingService } from "../../services/voting.service";
 import { CandidateModal } from "./CandidateModal";
 import { ConfirmDeleteModal } from "../common/ConfirmDeleteModal";
 import { PublishElectionModal } from "./PublishElectionModal";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { CandidateCardSkeleton } from "../common/Skeleton";
-import { votingService } from "../../services/voting.service";
-import { deriveElectionState, EMPTY_ELECTION_STATE } from "../../utils/electionStatus";
-import type { ElectionState } from "../../utils/electionStatus";
+import { electionStatusHelper } from "../../utils/electionStatus";
 import {
   Award,
   Plus,
@@ -21,6 +20,7 @@ import {
   Clock,
   RotateCcw,
   BarChart3,
+  AlertTriangle,
 } from "lucide-react";
 
 export const CandidateManagement: React.FC = () => {
@@ -36,11 +36,60 @@ export const CandidateManagement: React.FC = () => {
 
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [electionState, setElectionState] = useState<ElectionState>(EMPTY_ELECTION_STATE);
-  const [, setTick] = useState(0);
+  const [electionState, setElectionState] = useState(electionStatusHelper.getState());
 
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+
+  const [isEndNowModalOpen, setIsEndNowModalOpen] = useState(false);
+  const [isEndingNow, setIsEndingNow] = useState(false);
+
+  const [activeElectionId, setActiveElectionId] = useState<string | null>(null);
+
+  const autoEndRef = useRef<boolean>(false);
+
+  const fetchElectionStatus = async () => {
+    try {
+      const res = await votingService.getActiveElection().catch(() => ({
+        success: false,
+        data: null,
+      }));
+  
+      if (res.success && res.data) {
+        setActiveElectionId(res.data.id);
+        const synced = electionStatusHelper.syncFromElection(res.data);
+        setElectionState(synced);
+        return;
+      }
+  
+      const allRes = await electionService.getElections().catch(() => ({
+        success: false,
+        data: null,
+      }));
+  
+      if (allRes.success && allRes.data && allRes.data.length > 0) {
+        const completedElection = allRes.data.find(
+          (e: any) => e.status === "COMPLETED"
+        );
+        const draftElection = allRes.data.find(
+          (e: any) => e.status === "DRAFT"
+        );
+        const targetElection =
+          completedElection || draftElection || allRes.data[0];
+  
+        setActiveElectionId(targetElection.id);
+        const synced = electionStatusHelper.syncFromElection(targetElection);
+        setElectionState(synced);
+        return;
+      }
+  
+      setActiveElectionId(null);
+      electionStatusHelper.reset();
+      setElectionState(electionStatusHelper.getState());
+    } catch (err) {
+      console.error("Fetch election status error:", err);
+    }
+  };
 
   const fetchCandidates = async () => {
     try {
@@ -56,37 +105,51 @@ export const CandidateManagement: React.FC = () => {
     }
   };
 
-  const fetchElectionState = async () => {
-    try {
-      const res = await votingService.getActiveElection();
-      if (res.success && res.data) {
-        setElectionState(deriveElectionState(res.data));
-      }
-    } catch (err) {
-      console.error("Error fetching election state:", err);
-    }
-  };
-
-  const refreshAll = () => {
-    fetchCandidates();
-    fetchElectionState();
-  };
-
   useEffect(() => {
-    refreshAll();
+    Promise.all([fetchCandidates(), fetchElectionStatus()]);
   }, []);
 
-  // Render ulang tiap detik agar status "berakhir" berubah tepat waktu
   useEffect(() => {
-    if (!electionState.isPublished || electionState.isEnded) return;
     const interval = setInterval(() => {
-      setTick((t) => t + 1);
-      if (electionState.endTime && new Date(electionState.endTime).getTime() <= Date.now()) {
-        fetchElectionState();
+      if (
+        electionState.isPublished &&
+        !electionState.isEnded &&
+        electionState.endTime
+      ) {
+        const endTime = new Date(electionState.endTime).getTime();
+        const now = new Date().getTime();
+
+        if (now >= endTime && !autoEndRef.current) {
+          autoEndRef.current = true;
+          handleAutoEnd();
+        }
       }
-    }, 1000);
+    }, 5000);
+
     return () => clearInterval(interval);
   }, [electionState.isPublished, electionState.isEnded, electionState.endTime]);
+
+  const handleAutoEnd = async () => {
+    if (!activeElectionId) {
+      autoEndRef.current = false;
+      return;
+    }
+
+    try {
+      const res = await electionService.endElectionNow(activeElectionId);
+      if (res.success && res.data) {
+        const synced = electionStatusHelper.syncFromElection(res.data);
+        setElectionState(synced);
+        toast.success("Waktu pemilihan telah habis. Pemilihan otomatis diakhiri.");
+      }
+    } catch (err) {
+      console.error("Auto end election error:", err);
+    } finally {
+      setTimeout(() => {
+        autoEndRef.current = false;
+      }, 5000);
+    }
+  };
 
   const handleOpenAdd = () => {
     setCandidateToEdit(null);
@@ -110,7 +173,6 @@ export const CandidateManagement: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (!candidateToDelete) return;
-
     try {
       setIsDeleting(true);
       const res = await candidateService.deleteCandidate(candidateToDelete.id);
@@ -130,20 +192,53 @@ export const CandidateManagement: React.FC = () => {
     try {
       setIsPublishing(true);
 
-      const res = await electionService.publishActiveElection(endTime);
-      if (!res.success) {
-        toast.error(res.message || "Gagal mempublikasikan pemilihan");
+      let electionId = activeElectionId;
+
+      if (!electionId) {
+        const allRes = await electionService.getElections().catch(() => ({
+          success: false,
+          data: null,
+        }));
+
+        if (allRes.success && allRes.data && allRes.data.length > 0) {
+          const draftElection = allRes.data.find(
+            (e: any) => e.status === "DRAFT"
+          );
+          const targetElection = draftElection || allRes.data[0];
+          electionId = targetElection.id;
+          setActiveElectionId(electionId);
+        }
+      }
+
+      if (!electionId) {
+        toast.error("Pemilihan belum siap. Silakan refresh halaman ini.");
+        setIsPublishing(false);
         return;
       }
-      await fetchElectionState();
-      setIsPublishModalOpen(false);
 
-      const endDate = new Date(endTime);
-      toast.success(
-        `Pemilihan dipublikasikan sampai ${endDate.toLocaleDateString("id-ID")} ${endDate.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`
-      );
+      const res = await electionService.publishElection(electionId, endTime);
+
+      if (res.success && res.data) {
+        const synced = electionStatusHelper.syncFromElection(res.data);
+        setElectionState(synced);
+        setIsPublishModalOpen(false);
+
+        const endDate = new Date(endTime);
+        toast.success(
+          `Pemilihan dipublikasikan sampai ${endDate.toLocaleDateString(
+            "id-ID"
+          )} ${endDate.toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}`
+        );
+      } else {
+        toast.error(res.message || "Gagal publikasi");
+      }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal mempublikasikan pemilihan");
+      toast.error(
+        err.response?.data?.message || "Gagal mempublikasikan pemilihan"
+      );
     } finally {
       setIsPublishing(false);
     }
@@ -151,32 +246,78 @@ export const CandidateManagement: React.FC = () => {
 
   const handleShowGraph = async () => {
     try {
-      const res = await electionService.showActiveElectionGraph();
-      if (!res.success) {
-        toast.error(res.message || "Gagal menampilkan grafik");
+      if (!activeElectionId) {
+        toast.error("Pemilihan tidak ditemukan");
         return;
       }
-      await fetchElectionState();
-      toast.success("Grafik perolehan suara ditampilkan ke warga.");
+  
+      const res = await electionService.showGraphElection(activeElectionId);
+  
+      if (res.success && res.data) {
+        const synced = electionStatusHelper.syncFromElection(res.data);
+        setElectionState(synced);
+        toast.success("Grafik perolehan suara ditampilkan ke warga.");
+      } else {
+        toast.error(res.message || "Gagal menampilkan grafik");
+      }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal menampilkan grafik");
+      toast.error(
+        err.response?.data?.message || "Gagal menampilkan grafik"
+      );
+    }
+  };
+
+  const handleEndNow = async () => {
+    try {
+      setIsEndingNow(true);
+
+      if (!activeElectionId) {
+        toast.error("Pemilihan tidak ditemukan");
+        return;
+      }
+
+      const res = await electionService.endElectionNow(activeElectionId);
+
+      if (res.success && res.data) {
+        const synced = electionStatusHelper.syncFromElection(res.data);
+        setElectionState(synced);
+        setIsEndNowModalOpen(false);
+        toast.success(
+          "Pemilihan diakhiri lebih awal. Warga tidak bisa voting lagi."
+        );
+      } else {
+        toast.error(res.message || "Gagal mengakhiri pemilihan");
+      }
+    } catch (err: any) {
+      toast.error(
+        err.response?.data?.message || "Gagal mengakhiri pemilihan"
+      );
+    } finally {
+      setIsEndingNow(false);
     }
   };
 
   const handleResetElection = async () => {
     try {
       setIsResetting(true);
-
       const res = await electionService.resetElection();
 
       if (res.success) {
-        setElectionState(EMPTY_ELECTION_STATE);
+        electionStatusHelper.reset();
+        setElectionState(electionStatusHelper.getState());
 
         setCandidates([]);
+        setActiveElectionId(null);
+
+        await fetchElectionStatus();
+        await fetchCandidates();
+
         setIsResetModalOpen(false);
 
         toast.success(
-          `Pemilihan baru siap dimulai. ${res.data?.deletedCandidates ?? 0} kandidat lama telah dihapus.`
+          `Pemilihan baru siap dimulai. ${
+            res.data?.deletedCandidates ?? 0
+          } kandidat lama telah dihapus.`
         );
       } else {
         toast.error(res.message || "Gagal reset pemilihan");
@@ -227,10 +368,15 @@ export const CandidateManagement: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <button
-            onClick={refreshAll}
+            onClick={() => {
+              fetchCandidates();
+              fetchElectionStatus();
+            }}
             className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl border border-slate-200 transition-all flex items-center gap-2 text-xs font-semibold"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+            />
           </button>
 
           {electionState.isPublished && electionState.endTime && (
@@ -253,10 +399,19 @@ export const CandidateManagement: React.FC = () => {
               <span>Publikasi Sekarang</span>
             </button>
           ) : !electionState.isEnded ? (
-            <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Sedang Berlangsung</span>
-            </div>
+            <>
+              <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Sedang Berlangsung</span>
+              </div>
+
+              <button
+                onClick={() => setIsEndNowModalOpen(true)}
+                className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold shadow-sm shadow-sky-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                <span>Akhiri Sekarang</span>
+              </button>
+            </>
           ) : !electionState.showGraph ? (
             <button
               onClick={handleShowGraph}
@@ -275,7 +430,7 @@ export const CandidateManagement: React.FC = () => {
             </button>
           )}
 
-          {!electionState.showGraph && (
+          {!electionState.isPublished && !electionState.showGraph && (
             <button
               onClick={handleOpenAdd}
               className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold shadow-sm shadow-sky-500/20 transition-all flex items-center justify-center gap-2"
@@ -289,6 +444,7 @@ export const CandidateManagement: React.FC = () => {
 
       {electionState.isPublished && !electionState.isEnded && (
         <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-3">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mt-1.5 shrink-0" />
           <div>
             <h4 className="text-sm font-bold text-emerald-800">
               Pemilihan Sedang Berlangsung
@@ -298,7 +454,8 @@ export const CandidateManagement: React.FC = () => {
               <strong>
                 {endTimeFormatted.date} pukul {endTimeFormatted.time}
               </strong>
-              .
+              . Atau klik <strong>"Akhiri Sekarang"</strong> untuk menutup
+              lebih awal.
             </p>
           </div>
         </div>
@@ -308,7 +465,9 @@ export const CandidateManagement: React.FC = () => {
         <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3">
           <Calendar className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-sm font-bold text-amber-800">Pemilihan Telah Berakhir</h4>
+            <h4 className="text-sm font-bold text-amber-800">
+              Pemilihan Telah Berakhir
+            </h4>
             <p className="text-xs text-amber-700 mt-0.5">
               {electionState.showGraph
                 ? 'Grafik sudah ditampilkan. Klik "Mulai Pemilihan Baru" untuk memulai siklus berikutnya.'
@@ -323,7 +482,9 @@ export const CandidateManagement: React.FC = () => {
       ) : candidates.length === 0 ? (
         <div className="bg-white p-12 rounded-2xl text-center border border-slate-100 shadow-xs space-y-3">
           <Award className="w-12 h-12 text-slate-300 mx-auto" />
-          <h4 className="text-sm font-bold text-slate-700">Belum Ada Candidate Terdaftar</h4>
+          <h4 className="text-sm font-bold text-slate-700">
+            Belum Ada Candidate Terdaftar
+          </h4>
           <p className="text-xs text-slate-400">
             Klik tombol "Buat Paslon Baru" untuk memulai.
           </p>
@@ -350,7 +511,7 @@ export const CandidateManagement: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleDeleteClick(candidate)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-all"
                       title="Hapus Candidate"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -434,6 +595,88 @@ export const CandidateManagement: React.FC = () => {
         isLoading={isPublishing}
       />
 
+      {isEndNowModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm"
+            onClick={!isEndingNow ? () => setIsEndNowModalOpen(false) : undefined}
+          />
+
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden z-10 border border-slate-100">
+            <div className="relative bg-sky-500 text-white px-6 pt-6 pb-10 overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -mr-16 -mt-16" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/10 -ml-12 -mb-12" />
+
+              <div className="relative flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/80">
+                    Konfirmasi
+                  </p>
+                  <h3 className="text-lg font-black text-white leading-tight">
+                    Akhiri Pemilihan Sekarang
+                  </h3>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 pt-5 pb-6 space-y-4">
+              <p className="text-center text-sm text-slate-600 leading-relaxed">
+                Apakah Anda yakin ingin{" "}
+                <strong>mengakhiri pemilihan sekarang</strong>? Warga tidak akan
+                bisa vote lagi.
+              </p>
+
+              <div className="p-3 rounded-xl bg-sky-50 border border-sky-100 space-y-1.5 text-xs">
+                <p className="font-bold text-sky-700">Yang bakal terjadi:</p>
+                <ul className="text-sky-600 space-y-1 pl-4 list-disc">
+                  <li>Voting langsung ditutup sekarang</li>
+                  <li>Warga tidak bisa vote lagi</li>
+                  <li>Hasil akhir bisa langsung ditampilkan</li>
+                </ul>
+              </div>
+
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
+                  Pastikan semua suara sudah masuk sebelum mengakhiri lebih
+                  awal.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch gap-2.5">
+              <button
+                onClick={() => setIsEndNowModalOpen(false)}
+                disabled={isEndingNow}
+                className="flex-1 py-3 rounded-xl bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 text-sm font-bold transition-all disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleEndNow}
+                disabled={isEndingNow}
+                className="flex-[2] py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-black shadow-sm hover:shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              >
+                {isEndingNow ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Ya, Akhiri</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isResetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -470,10 +713,11 @@ export const CandidateManagement: React.FC = () => {
                 <p className="font-bold text-sky-700">Yang bakal terjadi:</p>
                 <ul className="text-sky-600 space-y-1 pl-4 list-disc">
                   <li>
-                    Semua <strong>{candidates.length} paslon</strong> lama akan dihapus
+                    Semua <strong>{candidates.length} paslon</strong> lama akan
+                    dihapus
                   </li>
                   <li>Data hasil vote ikut terhapus</li>
-                  <li>Status kembali ke "Belum Dipublikasi"</li>
+                  <li>Election baru dibuat dengan status "Belum Dipublikasi"</li>
                   <li>Warga gak bisa akses sampai dipublikasi lagi</li>
                 </ul>
               </div>

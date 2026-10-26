@@ -2,9 +2,20 @@ import React, { useState, useEffect, useRef } from "react";
 import { Modal } from "../common/Modal";
 import type { Candidate } from "../../types";
 import { candidateService } from "../../services/candidate.service";
+import { votingService } from "../../services/voting.service";
+import { electionService } from "../../services/election.service";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
-import { User, Image as ImageIcon, AlertCircle, UploadCloud, Trash2, RefreshCw, Link as LinkIcon, CheckCircle2 } from "lucide-react";
+import {
+  User,
+  Image as ImageIcon,
+  AlertCircle,
+  UploadCloud,
+  Trash2,
+  RefreshCw,
+  Link as LinkIcon,
+  CheckCircle2,
+} from "lucide-react";
 
 interface CandidateModalProps {
   isOpen: boolean;
@@ -24,14 +35,15 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
   const isSuperadmin = user?.role === "SUPERADMIN";
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [isLag, setIsLag] = useState(false);
   const [name, setName] = useState("");
   const [photo, setPhoto] = useState("");
   const [vision, setVision] = useState("");
   const [mission, setMission] = useState("");
+  const [isLag, setIsLag] = useState(false);
   const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [electionId, setElectionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (candidateToEdit) {
@@ -55,6 +67,39 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
     }
     setError(null);
   }, [candidateToEdit, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || candidateToEdit) return;
+
+    const fetchElectionId = async () => {
+      try {
+        const res = await votingService.getActiveElection();
+        if (res.success && res.data) {
+          setElectionId(res.data.id);
+          return;
+        }
+      } catch {}
+
+      try {
+        const allRes = await electionService.getElections();
+        if (allRes.success && allRes.data && allRes.data.length > 0) {
+          const draftElection = allRes.data.find(
+            (e: any) => e.status === "DRAFT"
+          );
+          if (draftElection) {
+            setElectionId(draftElection.id);
+            return;
+          }
+
+          setElectionId(allRes.data[0].id);
+        }
+      } catch (err) {
+        console.error("Gagal fetch election ID:", err);
+      }
+    };
+
+    fetchElectionId();
+  }, [isOpen, candidateToEdit]);
 
   const handleFileChange = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -113,20 +158,33 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
       return;
     }
 
+    if (!candidateToEdit && !electionId) {
+      setError("Pemilihan belum siap. Silakan refresh halaman ini.");
+      return;
+    }
+
     try {
       setLoading(true);
-      const payload = {
-        name: name.trim(),
-        photo: photo.trim() || null,
-        vision: vision.trim() || null,
-        mission: mission.trim() || null,
-        ...(isSuperadmin && { isLag }),
-      };
 
       if (candidateToEdit) {
+        const payload = {
+          name: name.trim(),
+          photo: photo.trim() || null,
+          vision: vision.trim() || null,
+          mission: mission.trim() || null,
+          ...(isSuperadmin && { isLag }),
+        };
         await candidateService.updateCandidate(candidateToEdit.id, payload);
         toast.success("Berhasil memperbarui data kandidat!");
       } else {
+        const payload = {
+          electionId: electionId || undefined,
+          name: name.trim(),
+          photo: photo.trim() || null,
+          vision: vision.trim() || null,
+          mission: mission.trim() || null,
+          ...(isSuperadmin && { isLag }),
+        };
         await candidateService.createCandidate(payload);
         toast.success("Berhasil menambahkan kandidat baru!");
       }
@@ -134,7 +192,8 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      const errMsg = err.response?.data?.message || "Gagal menyimpan data kandidat";
+      const errMsg =
+        err.response?.data?.message || "Gagal menyimpan data kandidat";
       setError(errMsg);
       toast.error(errMsg);
     } finally {
@@ -146,7 +205,11 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={candidateToEdit ? "Edit Data Candidate" : "Tambah Pasangan Calon / Candidate Baru"}
+      title={
+        candidateToEdit
+          ? "Edit Data Candidate"
+          : "Tambah Pasangan Calon / Candidate Baru"
+      }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
@@ -175,7 +238,9 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-bold text-slate-700">Foto Profil</label>
+            <label className="block text-xs font-bold text-slate-700">
+              Foto Profil
+            </label>
             <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px]">
               <button
                 type="button"
@@ -208,7 +273,9 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
             type="file"
             ref={fileInputRef}
             accept="image/*"
-            onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
+            onChange={(e) =>
+              e.target.files?.[0] && handleFileChange(e.target.files[0])
+            }
             className="hidden"
           />
 
@@ -217,7 +284,11 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
               {photo ? (
                 <div className="relative group bg-slate-50 p-3 rounded-2xl border border-slate-200 flex items-center gap-4">
                   <div className="w-24 h-28 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-300 shadow-sm">
-                    <img src={photo} alt="Preview Foto" className="w-full h-full object-cover" />
+                    <img
+                      src={photo}
+                      alt="Preview Foto"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold">
@@ -225,7 +296,8 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
                       <span>Foto Berhasil Diupload</span>
                     </div>
                     <p className="text-[11px] text-slate-500">
-                      Foto siap disimpan dan akan langsung tampil di halaman voting warga.
+                      Foto siap disimpan dan akan langsung tampil di halaman
+                      voting warga.
                     </p>
                     <div className="flex items-center gap-2 pt-1">
                       <button
@@ -278,8 +350,14 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
               </div>
               {photo && (
                 <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-200">
-                  <img src={photo} alt="Preview" className="w-12 h-12 object-cover rounded-lg border border-slate-200" />
-                  <span className="text-xs text-slate-500 font-medium">Preview Foto URL</span>
+                  <img
+                    src={photo}
+                    alt="Preview"
+                    className="w-12 h-12 object-cover rounded-lg border border-slate-200"
+                  />
+                  <span className="text-xs text-slate-500 font-medium">
+                    Preview Foto URL
+                  </span>
                 </div>
               )}
             </div>
@@ -287,7 +365,9 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">Visi Utama</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            Visi Utama
+          </label>
           <textarea
             value={vision}
             onChange={(e) => setVision(e.target.value)}
@@ -298,7 +378,9 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">Misi & Program Kerja</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            Misi & Program Kerja
+          </label>
           <textarea
             value={mission}
             onChange={(e) => setMission(e.target.value)}
@@ -333,7 +415,11 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
             disabled={loading}
             className="px-5 py-2 text-xs font-bold rounded-xl bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/20 transition-all disabled:opacity-50"
           >
-            {loading ? "Menyimpan..." : candidateToEdit ? "Perbarui Candidate" : "Simpan Candidate"}
+            {loading
+              ? "Menyimpan..."
+              : candidateToEdit
+              ? "Perbarui Candidate"
+              : "Simpan Candidate"}
           </button>
         </div>
       </form>

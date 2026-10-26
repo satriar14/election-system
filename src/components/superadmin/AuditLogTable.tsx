@@ -7,11 +7,16 @@ import { Search, Calendar, ShieldAlert, ChevronLeft, ChevronRight } from "lucide
 interface AuditLogTableProps {
   logs: AuditLog[];
   isLoading?: boolean;
+  viewerRole?: string;
 }
 
 const ITEMS_PER_PAGE = 10;
 
-export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, isLoading }) => {
+export const AuditLogTable: React.FC<AuditLogTableProps> = ({
+  logs,
+  isLoading,
+  viewerRole,
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -19,8 +24,15 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, isLoading })
     setCurrentPage(1);
   }, [searchTerm]);
 
+  const visibleLogs = useMemo(() => {
+    if (viewerRole === "SUPERADMIN" || !viewerRole) {
+      return logs;
+    }
+    return logs.filter((log) => log.user?.role !== "SUPERADMIN");
+  }, [logs, viewerRole]);
+
   const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
+    return visibleLogs.filter((log) => {
       const term = searchTerm.toLowerCase();
       const actionMatch = log.action.toLowerCase().includes(term);
       const detailsMatch = log.details?.toLowerCase().includes(term);
@@ -30,7 +42,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, isLoading })
       const entityMatch = log.entity?.toLowerCase().includes(term);
       return actionMatch || detailsMatch || userMatch || entityMatch;
     });
-  }, [logs, searchTerm]);
+  }, [visibleLogs, searchTerm]);
 
   const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE);
 
@@ -69,7 +81,8 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, isLoading })
     return pages;
   };
 
-  const startItem = filteredLogs.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const startItem =
+    filteredLogs.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1;
   const endItem = Math.min(currentPage * ITEMS_PER_PAGE, filteredLogs.length);
 
   return (
@@ -80,7 +93,9 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, isLoading })
             <ShieldAlert className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-800">Audit Log Aktivitas Sistem</h3>
+            <h3 className="text-lg font-bold text-slate-800">
+              Audit Log Aktivitas Sistem
+            </h3>
             <p className="text-xs text-slate-500 mt-0.5">
               Catatan Jejak Aktivitas dan Perubahan Data oleh Pengurus
             </p>
@@ -111,9 +126,9 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, isLoading })
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-          {isLoading ? (
-            <TableSkeleton rows={5} cols={5} />
-          ) : paginatedLogs.length === 0 ? (
+            {isLoading ? (
+              <TableSkeleton rows={5} cols={5} />
+            ) : paginatedLogs.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
                   Belum ada catatan audit log yang cocok.
@@ -121,11 +136,16 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, isLoading })
               </tr>
             ) : (
               paginatedLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                <tr
+                  key={log.id}
+                  className="hover:bg-slate-50/80 transition-colors"
+                >
                   <td className="px-6 py-4 font-mono text-[11px] text-slate-500 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{new Date(log.createdAt).toLocaleString("id-ID")}</span>
+                      <span>
+                        {new Date(log.createdAt).toLocaleString("id-ID")}
+                      </span>
                     </div>
                   </td>
 
@@ -142,7 +162,9 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, isLoading })
                           {log.user?.email}
                         </div>
                       </div>
-                      {log.user?.role && <StatusBadge status={log.user.role} type="role" />}
+                      {log.user?.role && (
+                        <StatusBadge status={log.user.role} type="role" />
+                      )}
                     </div>
                   </td>
 
@@ -182,7 +204,10 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, isLoading })
             Menampilkan{" "}
             <span className="font-bold text-slate-700">{startItem}</span> -{" "}
             <span className="font-bold text-slate-700">{endItem}</span> dari{" "}
-            <span className="font-bold text-slate-700">{filteredLogs.length}</span> log
+            <span className="font-bold text-slate-700">
+              {filteredLogs.length}
+            </span>{" "}
+            log
           </div>
 
           <div className="flex items-center gap-1">
@@ -197,7 +222,9 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, isLoading })
             {getPageNumbers().map((page, index) => (
               <React.Fragment key={index}>
                 {page === "..." ? (
-                  <span className="px-2 text-slate-400 text-xs font-bold">...</span>
+                  <span className="px-2 text-slate-400 text-xs font-bold">
+                    ...
+                  </span>
                 ) : (
                   <button
                     onClick={() => goToPage(page as number)}

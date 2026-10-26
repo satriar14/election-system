@@ -59,31 +59,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
       </button>
 
       {role === "SUPERADMIN" && (
-        <>
-          <button
-            onClick={() => handleTabClick("users")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "users"
-                ? "bg-sky-500 text-white shadow-md shadow-sky-500/20"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-            }`}
-          >
-            <Users className={`w-4 h-4 ${activeTab === "users" ? "text-white" : "text-slate-500"}`} />
-            <span>Kelola Pengguna</span>
-          </button>
-
-          <button
-            onClick={() => handleTabClick("audit")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "audit"
-                ? "bg-sky-500 text-white shadow-md shadow-sky-500/20"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-            }`}
-          >
-            <Activity className={`w-4 h-4 ${activeTab === "audit" ? "text-white" : "text-slate-500"}`} />
-            <span>Audit Log Sistem</span>
-          </button>
-        </>
+        <button
+          onClick={() => handleTabClick("users")}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            activeTab === "users"
+              ? "bg-sky-500 text-white shadow-md shadow-sky-500/20"
+              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+          }`}
+        >
+          <Users className={`w-4 h-4 ${activeTab === "users" ? "text-white" : "text-slate-500"}`} />
+          <span>Kelola Pengguna</span>
+        </button>
       )}
 
       {(role === "SUPERADMIN" || role === "ADMIN") && (
@@ -111,50 +97,61 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
             <Home className={`w-4 h-4 ${activeTab === "houses" ? "text-white" : "text-slate-500"}`} />
             <span>Kuota Voting</span>
           </button>
-        </>
-      )}
-
-      {(role === "SUPERADMIN" || role === "ADMIN" || role === "PENGAWAS") && (
-        <>
-          {role === "PENGAWAS" && (
-            <>
-              <button
-                onClick={() => handleTabClick("houses")}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === "houses"
-                    ? "bg-sky-500 text-white shadow-md shadow-sky-500/20"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-              >
-                <Home className={`w-4 h-4 ${activeTab === "houses" ? "text-white" : "text-slate-500"}`} />
-                <span>Kuota Voting</span>
-              </button>
-              <button
-                onClick={() => handleTabClick("audit")}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === "audit"
-                    ? "bg-sky-500 text-white shadow-md shadow-sky-500/20"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-              >
-                <Activity className={`w-4 h-4 ${activeTab === "audit" ? "text-white" : "text-slate-500"}`} />
-                <span>Audit Log Sistem</span>
-              </button>
-            </>
-          )}
 
           <button
-            onClick={() => handleTabClick("live-count")}
+            onClick={() => handleTabClick("audit")}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "live-count"
+              activeTab === "audit"
                 ? "bg-sky-500 text-white shadow-md shadow-sky-500/20"
                 : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
           >
-            <BarChart3 className={`w-4 h-4 ${activeTab === "live-count" ? "text-white" : "text-slate-500"}`} />
-            <span>Monitoring Live Vote</span>
+            <Activity className={`w-4 h-4 ${activeTab === "audit" ? "text-white" : "text-slate-500"}`} />
+            <span>Audit Log Sistem</span>
           </button>
         </>
+      )}
+
+      {role === "PENGAWAS" && (
+        <>
+          <button
+            onClick={() => handleTabClick("houses")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === "houses"
+                ? "bg-sky-500 text-white shadow-md shadow-sky-500/20"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            }`}
+          >
+            <Home className={`w-4 h-4 ${activeTab === "houses" ? "text-white" : "text-slate-500"}`} />
+            <span>Kuota Voting</span>
+          </button>
+
+          <button
+            onClick={() => handleTabClick("audit")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === "audit"
+                ? "bg-sky-500 text-white shadow-md shadow-sky-500/20"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            }`}
+          >
+            <Activity className={`w-4 h-4 ${activeTab === "audit" ? "text-white" : "text-slate-500"}`} />
+            <span>Audit Log Sistem</span>
+          </button>
+        </>
+      )}
+
+      {(role === "SUPERADMIN" || role === "ADMIN" || role === "PENGAWAS") && (
+        <button
+          onClick={() => handleTabClick("live-count")}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            activeTab === "live-count"
+              ? "bg-sky-500 text-white shadow-md shadow-sky-500/20"
+              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+          }`}
+        >
+          <BarChart3 className={`w-4 h-4 ${activeTab === "live-count" ? "text-white" : "text-slate-500"}`} />
+          <span>Monitoring Live Vote</span>
+        </button>
       )}
     </div>
   );

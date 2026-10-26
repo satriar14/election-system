@@ -1,5 +1,3 @@
-import type { Election } from "../types";
-
 export interface ElectionState {
   isPublished: boolean;
   endTime: string | null;
@@ -7,54 +5,89 @@ export interface ElectionState {
   showGraph: boolean;
 }
 
-export const EMPTY_ELECTION_STATE: ElectionState = {
+const DEFAULT_STATE: ElectionState = {
   isPublished: false,
   endTime: null,
   isEnded: false,
   showGraph: false,
 };
 
-// Status publikasi berasal dari database (Election.status, endAt, showGraph)
-export const deriveElectionState = (
-  election: Pick<Election, "status" | "endAt" | "showGraph"> | null | undefined
-): ElectionState => {
-  if (!election) return EMPTY_ELECTION_STATE;
+let currentState: ElectionState = { ...DEFAULT_STATE };
 
-  const endTime = election.endAt ?? null;
-  // ONGOING tanpa waktu berakhir belum dipublikasikan lewat tombol Publikasi
-  const isPublished =
-    election.status === "COMPLETED" || (election.status === "ONGOING" && !!endTime);
-  const isEnded =
-    isPublished &&
-    (election.status === "COMPLETED" ||
-      (!!endTime && new Date(endTime).getTime() <= Date.now()));
+export const electionStatusHelper = {
+  getState: (): ElectionState => {
+    return { ...currentState };
+  },
 
-  return {
-    isPublished,
-    endTime,
-    isEnded,
-    showGraph: !!election.showGraph,
-  };
-};
+  setState: (state: Partial<ElectionState>) => {
+    currentState = { ...currentState, ...state };
+    return currentState;
+  },
 
-export const getTimeRemaining = (
-  endTime: string | null
-): { days: number; hours: number; minutes: number; seconds: number; isExpired: boolean } => {
-  if (!endTime) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true };
-  }
+  syncFromElection: (election: any): ElectionState => {
+    if (!election) {
+      currentState = { ...DEFAULT_STATE };
+      return currentState;
+    }
 
-  const diff = new Date(endTime).getTime() - Date.now();
+    const isPublished =
+      election.status === "ONGOING" || election.status === "COMPLETED";
+    const isEnded = election.status === "COMPLETED";
 
-  if (diff <= 0) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true };
-  }
+    currentState = {
+      isPublished,
+      endTime: election.endAt || null,
+      isEnded,
+      showGraph: election.showGraph === true,
+    };
+    return currentState;
+  },
 
-  return {
-    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-    hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-    minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-    seconds: Math.floor((diff % (1000 * 60)) / 1000),
-    isExpired: false,
-  };
+  getTimeRemaining: (): {
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    isExpired: boolean;
+  } => {
+    if (!currentState.endTime) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true };
+    }
+
+    const now = new Date().getTime();
+    const end = new Date(currentState.endTime).getTime();
+    const diff = end - now;
+
+    if (diff <= 0) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true };
+    }
+
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+      minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+      seconds: Math.floor((diff % (1000 * 60)) / 1000),
+      isExpired: false,
+    };
+  },
+
+  checkAutoEnd: (): boolean => {
+    if (!currentState.endTime || !currentState.isPublished) return false;
+    const now = new Date().getTime();
+    const end = new Date(currentState.endTime).getTime();
+    if (now >= end && !currentState.isEnded) {
+      currentState.isEnded = true;
+      return true;
+    }
+    return currentState.isEnded;
+  },
+
+  reset: () => {
+    currentState = { ...DEFAULT_STATE };
+  },
+
+  isEnded: (): boolean => currentState.isEnded,
+  setEnded: (ended: boolean) => {
+    currentState.isEnded = ended;
+  },
 };
