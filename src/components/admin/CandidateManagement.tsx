@@ -592,7 +592,7 @@ export const CandidateManagement: React.FC = () => {
             onClick={!isEndingNow ? () => setIsEndNowModalOpen(false) : undefined}
           />
 
-          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden z-10 border border-slate-100">
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto z-10 border border-slate-100">
             <div className="relative bg-sky-500 text-white px-6 pt-6 pb-10 overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -mr-16 -mt-16" />
               <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/10 -ml-12 -mb-12" />
@@ -674,7 +674,7 @@ export const CandidateManagement: React.FC = () => {
             onClick={!isResetting ? () => setIsResetModalOpen(false) : undefined}
           />
 
-          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden z-10 border border-slate-100">
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto z-10 border border-slate-100">
             <div className="relative bg-sky-500 text-white px-6 pt-6 pb-10 overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -mr-16 -mt-16" />
               <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/10 -ml-12 -mb-12" />

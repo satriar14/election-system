@@ -185,28 +185,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
 
   return (
     <>
-      <div className="md:hidden bg-white border-b border-slate-200 p-3 flex items-center justify-between sticky top-0 z-30 shadow-sm w-full">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-slate-800">Web Voting</span>
-          <span className="px-2 py-0.5 bg-sky-100 text-sky-700 text-[10px] font-bold rounded-full">
+      <div className="lg:hidden bg-white border-b border-slate-200 p-3 flex items-center justify-between gap-3 sticky top-0 z-30 shadow-sm w-full min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-bold text-slate-800 whitespace-nowrap">Web Voting</span>
+          <span className="px-2 py-0.5 bg-sky-100 text-sky-700 text-[10px] font-bold rounded-full truncate min-w-0">
             {activeTab}
           </span>
         </div>
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 transition-all"
+          className="p-2 shrink-0 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 transition-all"
+          aria-label={isMobileOpen ? "Tutup menu" : "Buka menu"}
         >
           {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
       {isMobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex">
+        <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
             className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
             onClick={() => setIsMobileOpen(false)}
           />
-          <div className="relative w-4/5 max-w-xs bg-white h-full p-5 flex flex-col shadow-2xl z-10 animate-slide-in-right">
+          <div className="relative w-4/5 max-w-xs bg-white h-dvh p-5 flex flex-col shadow-2xl z-10 animate-slide-in-right">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
               <span className="text-lg font-black text-slate-900 tracking-tight">Web Voting</span>
               <button
@@ -226,7 +227,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
         </div>
       )}
 
-      <aside className="hidden md:flex w-64 bg-white text-slate-700 h-[calc(100vh)] p-4 flex-col border-r border-slate-200 shrink-0 sticky top-0">
+      <aside className="hidden lg:flex w-64 bg-white text-slate-700 h-screen p-4 flex-col border-r border-slate-200 shrink-0 sticky top-0">
         <div className="flex items-center gap-2 px-2 mb-8 h-10">
           <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center text-white font-bold">
             <Vote/>

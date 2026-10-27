@@ -121,7 +121,7 @@ export const AdminOverviewDashboard: React.FC<AdminOverviewDashboardProps> = ({ 
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
         <StatCard
           title="Total DPT Rumah"
           value={`${houses.length} Rumah`}
@@ -148,8 +148,8 @@ export const AdminOverviewDashboard: React.FC<AdminOverviewDashboardProps> = ({ 
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="min-w-0 xl:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-xs">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-slate-800 flex items-center gap-2">
               <TrendingUp size={18} className="text-sky-500" />
@@ -198,7 +198,7 @@ export const AdminOverviewDashboard: React.FC<AdminOverviewDashboardProps> = ({ 
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col">
+        <div className="min-w-0 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col">
           <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
             <PieIcon size={18} className="text-orange-500" />
             Hasil Perolehan Suara
@@ -246,8 +246,8 @@ export const AdminOverviewDashboard: React.FC<AdminOverviewDashboardProps> = ({ 
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-xs p-6 space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="min-w-0 bg-white rounded-2xl border border-slate-100 shadow-xs p-4 sm:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
               <Home className="w-5 h-5 text-sky-500" />
@@ -267,7 +267,7 @@ export const AdminOverviewDashboard: React.FC<AdminOverviewDashboardProps> = ({ 
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600">
+          <table className="w-full min-w-[680px] text-left text-xs text-slate-600">
             <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold border-b border-slate-100 text-[11px]">
               <tr>
                 <th className="px-5 py-3">Blok / No. Rumah</th>

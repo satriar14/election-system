@@ -112,36 +112,36 @@ export const SuperAdminDashboard: React.FC = () => {
   const chartTrendData = trendData.length > 0 ? trendData : defaultParticipationData;
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-slate-50">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50">
       <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} />
 
-      <main className="flex-1 p-6 md:p-8 overflow-y-auto w-full">
+      <main className="flex-1 min-w-0 w-full p-4 sm:p-6 lg:p-8 overflow-y-auto">
         
         {activeTab === "dashboard" && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div>
                 <h1 className="text-2xl font-bold text-slate-800">Dashboard Monitoring</h1>
                 <p className="text-slate-500 text-sm mt-1">Pantau aktivitas pemilihan dan data warga secara realtime.</p>
               </div>
               <button 
                 onClick={fetchDashboardData}
-                className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition shadow-sm"
+                className="w-full sm:w-auto px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition shadow-sm"
               >
                 Refresh Data
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
               <StatCard title="Total DPT Rumah" value={`${houses.length} Rumah`} sub={`${totalQuota} Hak Pilih terdaftar`} icon={<Home className="text-blue-600" />} bg="bg-blue-50" />
               <StatCard title="Paslon Kandidat" value={`${candidates.length} Paslon`} sub="Aktif dalam pemilihan" icon={<Users className="text-purple-600" />} bg="bg-purple-50" />
               <StatCard title="Suara Masuk" value={`${totalVotesCast} Suara`} sub={`${participationRate}% partisipasi warga`} icon={<Vote className="text-green-600" />} bg="bg-green-50" />
               <StatCard title="Aktivitas Sistem" value={`${auditLogs.length} Log`} sub="Aktivitas & jejak perubahan" icon={<Activity className="text-orange-600" />} bg="bg-orange-50" />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               
-              <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <div className="min-w-0 xl:col-span-2 bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -168,7 +168,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+              <div className="min-w-0 bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
                   <PieIcon size={18} className="text-orange-500"/> Hasil Perolehan Suara
                 </h3>
@@ -204,7 +204,7 @@ export const SuperAdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div className="min-w-0 bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-slate-800">Aktivitas Terbaru</h3>
                 <button onClick={() => setActiveTab('audit')} className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
@@ -214,17 +214,17 @@ export const SuperAdminDashboard: React.FC = () => {
               
               <div className="space-y-4">
                 {auditLogs.slice(0, 5).map((log, idx) => (
-                  <div key={idx} className="flex gap-4 p-3 hover:bg-slate-50 rounded-lg transition">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                  <div key={idx} className="flex gap-4 p-3 hover:bg-slate-50 rounded-lg transition min-w-0">
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
                       {typeof log.user === 'object' && log.user?.name 
                         ? log.user.name.substring(0, 2).toUpperCase() 
                         : "SA"}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-800">
                         {typeof log.user === 'object' ? log.user?.name : (log.user || "Super Admin")}
                       </p>
-                      <p className="text-xs text-slate-500">{log.action} - {log.details}</p>
+                      <p className="text-xs text-slate-500 break-words">{log.action} - {log.details}</p>
                       <p className="text-[10px] text-slate-400 mt-1">
                         {log.createdAt ? new Date(log.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString()}
                       </p>

@@ -112,8 +112,8 @@ export const UserManagementTable: React.FC = () => {
 
         <div className="border-t border-slate-100"></div>
 
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-          <form onSubmit={handleSearch} className="relative w-full lg:w-80 shrink-0">
+        <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 min-w-0">
+          <form onSubmit={handleSearch} className="relative w-full xl:w-80 shrink-0">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
@@ -124,7 +124,7 @@ export const UserManagementTable: React.FC = () => {
             />
           </form>
 
-          <div className="flex items-center gap-1.5 p-1 bg-slate-50 rounded-xl border border-slate-100 overflow-x-auto">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-50 rounded-xl border border-slate-100 overflow-x-auto w-full xl:w-auto min-w-0">
             {["ALL", "SUPERADMIN", "ADMIN", "PENGAWAS"].map((role) => (
               <button
                 key={role}
@@ -144,7 +144,7 @@ export const UserManagementTable: React.FC = () => {
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full min-w-[760px] text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 <th className="py-4 px-6">Pengguna</th>

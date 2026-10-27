@@ -86,7 +86,7 @@ export const HouseManagement: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-4">
+        <div className="p-4 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="text-xs font-semibold text-slate-600">
             Total Terdaftar: <span className="text-slate-900 font-bold">{houses.length} Rumah</span>
           </div>
@@ -105,7 +105,7 @@ export const HouseManagement: React.FC = () => {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600">
+          <table className="w-full min-w-[720px] text-left text-xs text-slate-600">
             <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold border-b border-slate-100 text-[11px]">
               <tr>
                 <th className="px-6 py-3.5">Blok</th>

@@ -60,7 +60,7 @@ export const HouseQuotaMonitor: React.FC = () => {
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600">
+          <table className="w-full min-w-[680px] text-left text-xs text-slate-600">
             <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold border-b border-slate-100 text-[11px]">
               <tr>
                 <th className="px-6 py-3.5">Blok / Nomor</th>
