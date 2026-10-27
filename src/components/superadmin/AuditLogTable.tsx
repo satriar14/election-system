@@ -87,7 +87,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-      <div className="p-5 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 bg-slate-50 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-sky-50 text-sky-500 rounded-2xl border border-sky-100">
             <ShieldAlert className="w-5 h-5" />
@@ -102,7 +102,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({
           </div>
         </div>
 
-        <div className="relative w-full sm:w-72">
+        <div className="relative w-full lg:w-72 shrink-0">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -115,7 +115,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs text-slate-600">
+        <table className="w-full min-w-[800px] text-left text-xs text-slate-600">
           <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold border-b border-slate-100 text-[11px]">
             <tr>
               <th className="px-6 py-3.5">Waktu</th>
@@ -210,7 +210,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({
             log
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 max-w-full overflow-x-auto">
             <button
               onClick={() => goToPage(currentPage - 1)}
               disabled={currentPage === 1}

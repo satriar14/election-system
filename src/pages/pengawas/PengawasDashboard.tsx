@@ -21,10 +21,10 @@ export const PengawasDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50">
       <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} />
 
-      <main className="flex-1 p-6 md:p-8 overflow-y-auto w-full">
+      <main className="flex-1 min-w-0 w-full p-4 sm:p-6 lg:p-8 overflow-y-auto">
         {activeTab === "dashboard" && (
           <AdminOverviewDashboard onNavigateTab={setActiveTab} />
         )}
