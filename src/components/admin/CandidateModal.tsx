@@ -37,7 +37,6 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
 
   const [name, setName] = useState("");
   const [photo, setPhoto] = useState("");
-  const [vision, setVision] = useState("");
   const [mission, setMission] = useState("");
   const [isLag, setIsLag] = useState(false);
   const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
@@ -49,7 +48,6 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
     if (candidateToEdit) {
       setName(candidateToEdit.name || "");
       setPhoto(candidateToEdit.photo || "");
-      setVision(candidateToEdit.vision || "");
       setMission(candidateToEdit.mission || "");
       setIsLag(!!candidateToEdit.isLag);
       if (candidateToEdit.photo && candidateToEdit.photo.startsWith("http")) {
@@ -60,7 +58,6 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
     } else {
       setName("");
       setPhoto("");
-      setVision("");
       setMission("");
       setIsLag(false);
       setUploadMode("file");
@@ -158,11 +155,6 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
       return;
     }
 
-    if (!candidateToEdit && !electionId) {
-      setError("Pemilihan belum siap. Silakan refresh halaman ini.");
-      return;
-    }
-
     try {
       setLoading(true);
 
@@ -170,7 +162,7 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
         const payload = {
           name: name.trim(),
           photo: photo.trim() || null,
-          vision: vision.trim() || null,
+          vision: null,
           mission: mission.trim() || null,
           ...(isSuperadmin && { isLag }),
         };
@@ -181,7 +173,7 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
           electionId: electionId || undefined,
           name: name.trim(),
           photo: photo.trim() || null,
-          vision: vision.trim() || null,
+          vision: null,
           mission: mission.trim() || null,
           ...(isSuperadmin && { isLag }),
         };
@@ -366,26 +358,13 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
 
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">
-            Visi Utama
-          </label>
-          <textarea
-            value={vision}
-            onChange={(e) => setVision(e.target.value)}
-            placeholder="Tuliskan visi singkat kandidat..."
-            rows={2}
-            className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all text-slate-800"
-          ></textarea>
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            Misi & Program Kerja
+            Alasan Dukungan Warga
           </label>
           <textarea
             value={mission}
             onChange={(e) => setMission(e.target.value)}
-            placeholder="Tuliskan poin-poin program kerja utama..."
-            rows={3}
+            placeholder="Tuliskan alasan dukungan warga untuk kandidat ini..."
+            rows={4}
             className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all text-slate-800"
           ></textarea>
         </div>

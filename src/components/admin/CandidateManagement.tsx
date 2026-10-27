@@ -542,23 +542,13 @@ export const CandidateManagement: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2 text-xs text-slate-600 bg-slate-50/80 p-3.5 rounded-xl border border-slate-100">
-                    <div>
-                      <span className="font-bold text-slate-800 block text-[11px] mb-0.5">
-                        Visi:
-                      </span>
-                      <p className="line-clamp-2 italic text-slate-600">
-                        "{candidate.vision || "Belum diisi"}"
-                      </p>
-                    </div>
-                    <div>
-                      <span className="font-bold text-slate-800 block text-[11px] mb-0.5">
-                        Misi & Program:
-                      </span>
-                      <p className="line-clamp-3 text-slate-600">
-                        {candidate.mission || "Belum diisi"}
-                      </p>
-                    </div>
+                  <div className="text-xs text-slate-600 bg-slate-50/80 p-3.5 rounded-xl border border-slate-100">
+                    <span className="font-bold text-slate-800 block text-[11px] mb-1">
+                      Alasan Dukungan Warga:
+                    </span>
+                    <p className="line-clamp-3 text-slate-600 leading-relaxed whitespace-pre-line">
+                      {candidate.mission || "Belum diisi"}
+                    </p>
                   </div>
                 </div>
               </div>
