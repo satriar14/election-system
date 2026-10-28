@@ -6,6 +6,8 @@ export interface CastVoteInput {
   houseNumber: string;
   candidateId: string;
   electionId: string;
+  ownerName?: string;
+  voterName?: string;
 }
 
 export interface CastVoteResponse {
@@ -15,6 +17,7 @@ export interface CastVoteResponse {
   candidateName: string;
   block: string;
   houseNumber: string;
+  ownerName?: string | null;
   voterQuota: number;
   usedQuota: number;
   remainingQuota: number;

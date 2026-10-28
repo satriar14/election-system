@@ -4,6 +4,7 @@ import type { ApiResponse, House } from "../types";
 export interface CreateHouseInput {
   block: string;
   houseNumber: string;
+  ownerName?: string | null;
   voterQuota: number;
 }
 

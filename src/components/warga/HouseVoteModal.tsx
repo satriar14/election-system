@@ -3,7 +3,7 @@ import { Modal } from "../common/Modal";
 import type { Candidate, Election } from "../../types";
 import { votingService } from "../../services/voting.service";
 import type { CastVoteResponse } from "../../services/voting.service";
-import { Home, Hash, Vote, AlertCircle, ShieldCheck } from "lucide-react";
+import { Home, Hash, Vote, AlertCircle, ShieldCheck, User } from "lucide-react";
 
 interface HouseVoteModalProps {
   isOpen: boolean;
@@ -22,6 +22,7 @@ export const HouseVoteModal: React.FC<HouseVoteModalProps> = ({
 }) => {
   const [block, setBlock] = useState("");
   const [houseNumber, setHouseNumber] = useState("");
+  const [ownerName, setOwnerName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,9 +34,10 @@ export const HouseVoteModal: React.FC<HouseVoteModalProps> = ({
 
     const cleanBlock = block.trim().toUpperCase();
     const cleanHouse = houseNumber.trim();
+    const cleanOwner = ownerName.trim();
 
-    if (!cleanBlock || !cleanHouse) {
-      setError("Mohon isi Blok dan Nomor Rumah Anda.");
+    if (!cleanBlock || !cleanHouse || !cleanOwner) {
+      setError("Mohon isi Blok, Nomor Rumah, dan Nama Pemilih Anda.");
       return;
     }
 
@@ -60,11 +62,13 @@ export const HouseVoteModal: React.FC<HouseVoteModalProps> = ({
         houseNumber: cleanHouse,
         candidateId: candidate.id,
         electionId: election.id,
+        ownerName: cleanOwner,
       });
 
       if (voteRes.success && voteRes.data) {
         setBlock("");
         setHouseNumber("");
+        setOwnerName("");
         onVoteSuccess(voteRes.data);
       } else {
         setError(voteRes.message || "Gagal menyimpan suara voting.");
@@ -141,6 +145,26 @@ export const HouseVoteModal: React.FC<HouseVoteModalProps> = ({
               />
             </div>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            Nama Calon Pemilih / Pemilik Rumah <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={ownerName}
+              onChange={(e) => setOwnerName(e.target.value)}
+              placeholder="Misal: Bpk. Bambang / Nama Pemilih"
+              required
+              className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-bold text-slate-800"
+            />
+          </div>
+          <p className="text-[10px] text-slate-400 mt-1">
+            Wajib diisi untuk verifikasi hak pilih dan pencatatan pemilik rumah.
+          </p>
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">

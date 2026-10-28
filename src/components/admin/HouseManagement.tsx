@@ -58,7 +58,12 @@ export const HouseManagement: React.FC = () => {
   const filteredHouses = houses.filter((h) => {
     const term = searchTerm.toLowerCase();
     const fullAddr = `blok ${h.block} no ${h.houseNumber}`.toLowerCase();
-    return fullAddr.includes(term) || h.block.toLowerCase().includes(term) || h.houseNumber.toLowerCase().includes(term);
+    return (
+      fullAddr.includes(term) ||
+      h.block.toLowerCase().includes(term) ||
+      h.houseNumber.toLowerCase().includes(term) ||
+      (h.ownerName && h.ownerName.toLowerCase().includes(term))
+    );
   });
 
   return (
@@ -110,6 +115,7 @@ export const HouseManagement: React.FC = () => {
               <tr>
                 <th className="px-6 py-3.5">Blok</th>
                 <th className="px-6 py-3.5">Nomor Rumah</th>
+                <th className="px-6 py-3.5">Pemilik Rumah</th>
                 <th className="px-6 py-3.5">Total Kuota</th>
                 <th className="px-6 py-3.5">Suara Terpakai</th>
                 <th className="px-6 py-3.5">Sisa Kuota</th>
@@ -118,10 +124,10 @@ export const HouseManagement: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
             {isLoading ? (
-              <TableSkeleton rows={5} cols={6} />
+              <TableSkeleton rows={5} cols={7} />
             ) : filteredHouses.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
                     Tidak ada data rumah yang ditemukan.
                   </td>
                 </tr>
@@ -133,6 +139,13 @@ export const HouseManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 font-semibold text-slate-800">
                       No. {house.houseNumber}
+                    </td>
+                    <td className="px-6 py-4 text-slate-700">
+                      {house.ownerName ? (
+                        <span className="font-semibold text-slate-900">{house.ownerName}</span>
+                      ) : (
+                        <span className="text-slate-400 italic text-[11px]">- Belum ada -</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 font-bold text-xs border border-sky-100 whitespace-nowrap">
