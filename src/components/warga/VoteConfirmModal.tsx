@@ -1,15 +1,16 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Modal } from "../common/Modal";
 import type { Candidate } from "../../types";
-import { Vote, AlertTriangle, CheckCircle } from "lucide-react";
+import { Vote, AlertTriangle, CheckCircle, User, AlertCircle } from "lucide-react";
 
 interface VoteConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (voterName: string) => void;
   candidate: Candidate | null;
   block: string;
   houseNumber: string;
+  initialOwnerName?: string | null;
   loading?: boolean;
 }
 
@@ -20,13 +21,34 @@ export const VoteConfirmModal: React.FC<VoteConfirmModalProps> = ({
   candidate,
   block,
   houseNumber,
+  initialOwnerName = "",
   loading = false,
 }) => {
+  const [voterName, setVoterName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setVoterName(initialOwnerName || "");
+      setError(null);
+    }
+  }, [isOpen, initialOwnerName]);
+
   if (!candidate) return null;
+
+  const handleConfirm = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!voterName.trim()) {
+      setError("Nama calon pemilih / pemilik rumah wajib diisi.");
+      return;
+    }
+    setError(null);
+    onConfirm(voterName.trim());
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Konfirmasi Suara Voting Anda">
-      <div className="space-y-4 text-center">
+      <form onSubmit={handleConfirm} className="space-y-4 text-center">
         <div className="w-14 h-14 rounded-full bg-sky-50 text-sky-500 flex items-center justify-center mx-auto mb-2 border border-sky-100 shadow-xs">
           <Vote className="w-7 h-7" />
         </div>
@@ -46,6 +68,37 @@ export const VoteConfirmModal: React.FC<VoteConfirmModalProps> = ({
           </div>
         </div>
 
+        {error && (
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2 text-left">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+            <span className="font-medium">{error}</span>
+          </div>
+        )}
+
+        <div className="text-left space-y-1.5">
+          <label className="block text-xs font-bold text-slate-700">
+            Nama Calon Pemilih / Pemilik Rumah <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={voterName}
+              onChange={(e) => {
+                setVoterName(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="Masukkan nama Anda (misal: Bpk. Bambang)"
+              required
+              disabled={loading}
+              className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-bold text-slate-800"
+            />
+          </div>
+          <p className="text-[10px] text-slate-400">
+            Wajib diisi untuk verifikasi hak pilih dan pencatatan pemilik rumah.
+          </p>
+        </div>
+
         <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] text-left flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
           <span>Suara yang telah dimasukkan tidak dapat diubah kembali. Pastikan pilihan Anda sudah benar.</span>
@@ -61,9 +114,8 @@ export const VoteConfirmModal: React.FC<VoteConfirmModalProps> = ({
             Batal
           </button>
           <button
-            type="button"
-            onClick={onConfirm}
-            disabled={loading}
+            type="submit"
+            disabled={loading || !voterName.trim()}
             className="px-6 py-2.5 text-xs font-extrabold rounded-xl bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/20 flex items-center gap-2 disabled:opacity-50"
           >
             {loading ? (
@@ -79,7 +131,7 @@ export const VoteConfirmModal: React.FC<VoteConfirmModalProps> = ({
             )}
           </button>
         </div>
-      </div>
+      </form>
     </Modal>
   );
 };

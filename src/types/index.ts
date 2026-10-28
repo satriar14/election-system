@@ -40,6 +40,7 @@ export interface House {
   id: string;
   block: string;
   houseNumber: string;
+  ownerName?: string | null;
   voterQuota: number;
   usedQuota?: number;
   remainingQuota?: number;
@@ -103,6 +104,7 @@ export interface VerifyHouseResponse {
   houseId: string;
   block: string;
   houseNumber: string;
+  ownerName?: string | null;
   voterQuota: number;
   usedQuota: number;
   remainingQuota: number;
