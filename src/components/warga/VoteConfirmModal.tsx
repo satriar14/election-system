@@ -77,7 +77,7 @@ export const VoteConfirmModal: React.FC<VoteConfirmModalProps> = ({
 
         <div className="text-left space-y-1.5">
           <label className="block text-xs font-bold text-slate-700">
-            Nama Calon Pemilih / Pemilik Rumah <span className="text-red-500">*</span>
+            Nama<span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
