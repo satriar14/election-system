@@ -97,16 +97,6 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
       )}
 
       <div className="px-4 pb-4 space-y-3 flex-1 flex flex-col justify-between">
-        {/* Alasan Dukungan Warga (mengambil data dari field candidate.mission) */}
-        <div className="p-3.5 rounded-2xl bg-sky-50/70 border border-sky-100 text-left">
-          <span className="block text-[11px] font-black uppercase tracking-wider text-sky-900 mb-1">
-            Alasan Dukungan Warga
-          </span>
-          <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line line-clamp-4">
-            {candidate.mission || "Belum ada alasan dukungan warga."}
-          </p>
-        </div>
-
         <button
           onClick={() => !isElectionEnded && onSelect(candidate)}
           disabled={isElectionEnded}

@@ -348,19 +348,6 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({
           )}
         </div>
 
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            Alasan Dukungan Warga
-          </label>
-          <textarea
-            value={mission}
-            onChange={(e) => setMission(e.target.value)}
-            placeholder="Tuliskan alasan dukungan warga untuk kandidat ini..."
-            rows={4}
-            className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all text-slate-800"
-          ></textarea>
-        </div>
-
         <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4 border-t border-slate-100">
           <button
             type="button"
